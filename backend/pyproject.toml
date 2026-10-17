@@ -1,0 +1,18 @@
+[project]
+name = "school-ai-service"
+version = "1.0.0"
+description = "CSV-first role-aware AI service for the school kiosk"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+check_untyped_defs = true

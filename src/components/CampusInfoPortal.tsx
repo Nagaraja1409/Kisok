@@ -61,7 +61,7 @@ export default function CampusInfoPortal({
   >([
     {
       sender: "bot",
-      text: "Hello! Welcome to Green Valley Public School. Click anywhere or select your role to proceed to your portal.",
+      text: "Hello! I'm GREEN_AI, your smart campus assistant. I can help you explore the features available for your role. What would you like to do?",
     },
   ]);
 
@@ -981,7 +981,7 @@ export default function CampusInfoPortal({
               <span>Digital Campus Kiosk</span>
             </div>
             <button className="assistant-button" onClick={(e) => { e.stopPropagation(); setBotModalOpen(true); }}>
-              <span className="assistant-pulse" /> Need help? <b>Ask GreenBot</b>
+              <span className="assistant-pulse" /> Need help? <b>Ask GREEN_AI</b>
             </button>
           </footer>
         </div>
@@ -1038,7 +1038,7 @@ export default function CampusInfoPortal({
               >
                 <img
                   src="/school_bot.jpg"
-                  alt="School Bot"
+                  alt="GREEN_AI"
                   style={{
                     width: 44,
                     height: 44,
@@ -1055,10 +1055,10 @@ export default function CampusInfoPortal({
                       fontWeight: 700,
                     }}
                   >
-                    Green Valley AI Assistant
+                    GREEN_AI
                   </h3>
                   <p style={{ fontSize: "0.75rem", opacity: 0.9 }}>
-                    Online • 24/7 School Kiosk Help
+                    Your Smart Campus AI Assistant
                   </p>
                 </div>
               </div>
@@ -1189,7 +1189,7 @@ export default function CampusInfoPortal({
             >
               <input
                 type="text"
-                placeholder="Ask our AI assistant anything..."
+                placeholder="Ask GREEN_AI anything..."
                 value={botChatInput}
                 onChange={(e) => setBotChatInput(e.target.value)}
                 onKeyDown={(e) =>

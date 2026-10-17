@@ -250,7 +250,7 @@ export default function RoleSelectionScreen({
         <footer className="command-footer">
           <div><span className="footer-dot" /> Role Selection Portal • Touch any role card above to proceed</div>
           <div className="footer-links"><span>CBSE Affiliation 1930281</span><span>NAAC Grade A++</span><span>Campus: 6,200 Students</span><span>Digital Campus Kiosk</span></div>
-          <button className="assistant-button" onClick={onOpenBot}><span className="assistant-pulse" /> Need help? <b>Ask GreenBot</b></button>
+          <button className="assistant-button" onClick={onOpenBot}><span className="assistant-pulse" /> Need help? <b>Ask GREEN_AI</b></button>
         </footer>
       </div>
 

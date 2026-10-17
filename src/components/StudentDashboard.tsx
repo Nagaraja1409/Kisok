@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { getUserSession, clearUserSession } from "@/lib/session";
 import { SessionInfo } from "@/types/auth";
 import { CLIENT_API_ENDPOINTS } from "@/config/api";
+import { sendGreenAiQuery } from "@/lib/greenAiClient";
+import RoleAIFeatureExplorer from "@/components/shared/RoleAIFeatureExplorer";
 import {
   GraduationCap,
   FileText,
@@ -210,7 +212,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
     {
       id: "msg-welcome",
       sender: "bot",
-      text: "👋 Hello! I am GreenBot, your Green Valley Student & Parent Kiosk Assistant. Ask me anything about your attendance, exam results, timetable, homework diary, or fees!",
+      text: "Hello! I'm GREEN_AI, your smart campus assistant. I can help you explore the features available for your role. What would you like to do?",
       time: "Just now",
       suggestions: [
         "What is my attendance rate?",
@@ -732,7 +734,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
   };
 
   // AI Chat Handler
-  const handleSendChatMessage = (promptText?: string) => {
+  const handleSendChatMessage = async (promptText?: string) => {
     const q = (promptText || chatInputText).trim();
     if (!q) return;
 
@@ -747,45 +749,61 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
     setChatInputText("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      const lower = q.toLowerCase();
-      let botReply = "";
-      let suggestions: string[] = [];
+    try {
+      const uiContext = {
+        studentDetails,
+        profile: studentDetails,
+        attendanceData,
+        attendance: attendanceData,
+        dynamicAttendanceRate,
+        totalWorkingDays,
+        totalPresentDays,
+        feeData,
+        fees: feeData,
+        totalFeeBalance,
+        timetableData,
+        timetable: timetableData,
+        homeworkData,
+        examMarksData,
+        marks: examMarksData,
+        noticesData,
+      };
 
-      if (lower.includes("attendance")) {
-        botReply = `📊 Live Attendance Report:\n• Cumulative Attendance: ${dynamicAttendanceRate}%\n• Total Working Days: ${totalWorkingDays}\n• Days Present: ${totalPresentDays}\n• Status: ${dynamicAttendanceRate >= 75 ? "Excellent (Above CBSE 75% norm) ✅" : "Needs Attention ⚠️"}`;
-        suggestions = ["Show timetable", "Check fee dues", "Show exam scorecards"];
-      } else if (lower.includes("exam") || lower.includes("marks") || lower.includes("score")) {
-        botReply = `📝 Examination Summary:\n• Evaluated Subjects: ${examMarksData.length}\n• Assessment Mode: ${examMode === "EWAS" ? "Exam-Wise Analysis" : "Subject-Wise Analysis"}\n• Recent Subjects Recorded: ${examMarksData.slice(0, 3).map((m) => `${m.subject}: ${m.obtainedMarks}/${m.maxMarks} (Grade ${m.grade})`).join(", ") || "Active Scorecards available"}`;
-        suggestions = ["Open Exam Results tab", "Check homework", "Show timetable"];
-      } else if (lower.includes("fee") || lower.includes("due") || lower.includes("balance")) {
-        botReply = `💳 Fee Analysis Ledger:\n• Pending Balance: ₹${totalFeeBalance.toLocaleString()}\n• Total Receivable: ₹${feeData.reduce((acc, f) => acc + f.receivable, 0).toLocaleString()}\n• Total Paid: ₹${feeData.reduce((acc, f) => acc + f.collection, 0).toLocaleString()}\n• Account Status: ${totalFeeBalance <= 0 ? "All Clear (Zero Outstanding) 🎉" : "Dues Pending at Accounts Desk"}`;
-        suggestions = ["Open Fees tab", "Check attendance", "Show notices"];
-      } else if (lower.includes("timetable") || lower.includes("class") || lower.includes("period")) {
-        botReply = timetableData.studentTT.length > 0
-          ? `🗓️ Weekly Time-Table:\n• Total Weekly Periods: ${timetableData.studentTT.length}\n• Next Scheduled Class: ${timetableData.studentTT[0]?.ISMS_SubjectName || "Class"}${timetableData.studentTT[0]?.EmpName ? ` by ${timetableData.studentTT[0].EmpName}` : ""}`
-          : `🗓️ Weekly Time-Table: No published timetable periods found on the server for the current session.`;
-        suggestions = ["Open Time-Table tab", "Check homework diary", "Ask something else"];
-      } else if (lower.includes("homework") || lower.includes("diary")) {
-        botReply = `📚 Home-work Diary:\n• Assigned Tasks: ${homeworkData.length}\n• Latest: ${homeworkData[0]?.subject ? `${homeworkData[0].subject} - ${homeworkData[0].topic} (Due: ${homeworkData[0].dueDate})` : "All daily homework updated from faculty"}`;
-        suggestions = ["Open Home-work tab", "Check school notices", "Show attendance"];
-      } else {
-        botReply = `🤖 Thanks for asking! As your Green Valley Smart Campus Assistant, I have access to your live academic records, morning attendance, fee ledger, and class schedules. You can also explore any module from the navigation bar above!`;
-        suggestions = ["What is my attendance rate?", "Show my exam results", "What is my timetable today?", "Do I have pending fee balance?"];
-      }
+      const result = await sendGreenAiQuery({
+        message: q,
+        role: "student_parent",
+        userId: studentDetails.admNo || session?.username || "STU-1001",
+        sessionId: `kiosk_student_${session?.UserId || session?.username || "session"}`,
+        uiContext,
+      });
 
       setChatMessages((prev) => [
         ...prev,
         {
           id: `msg-bot-${Date.now()}`,
           sender: "bot",
-          text: botReply,
+          text: result.answer,
           time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-          suggestions,
+          suggestions: result.followupSuggestions && result.followupSuggestions.length > 0
+            ? result.followupSuggestions
+            : ["Show timetable", "Check fee dues", "Show exam scorecards"],
         },
       ]);
+    } catch (e: any) {
+      console.error("[StudentDashboard AI] Error:", e);
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `msg-bot-${Date.now()}`,
+          sender: "bot",
+          text: "I am having trouble retrieving that from the campus server. Please try again.",
+          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+          suggestions: ["Show timetable", "Check fee dues"],
+        },
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 600);
+    }
   };
 
   const studentDisplayName = studentDetails.name || session?.name || session?.username || "Student";
@@ -1010,7 +1028,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
             { id: "homework" as StudentScreen, name: "Home-work", icon: BookOpen },
             { id: "timetable" as StudentScreen, name: "Time-Table", icon: Clock },
             { id: "exam-overall" as StudentScreen, name: "Over All Exam", icon: BarChart2 },
-            { id: "aispace" as StudentScreen, name: "GreenBot AI", icon: Sparkles },
+            { id: "aispace" as StudentScreen, name: "GREEN_AI", icon: Sparkles },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = currentScreen === tab.id;
@@ -1197,17 +1215,17 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                 type="button"
                 onClick={() => setCurrentScreen("aispace")}
                 className="hero-ai-capsule-btn"
-                title="Launch Student GreenBot AI Space"
+                title="Launch Student GREEN_AI Space"
               >
                 <div className="hero-ai-robo-wrap">
-                  <img src="/ai_robot.png" alt="GreenBot" className="hero-ai-robo-img" />
+                  <img src="/ai_robot.png" alt="GREEN_AI" className="hero-ai-robo-img" />
                   <span className="hero-ai-pulse-dot" />
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="hero-ai-kicker">
                     <Sparkles size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> AI SPACE
                   </div>
-                  <span className="hero-ai-action">Ask GreenBot →</span>
+                  <span className="hero-ai-action">Ask GREEN_AI →</span>
                 </div>
               </button>
             </div>
@@ -1931,7 +1949,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                   boxShadow: "0 2px 6px rgba(234, 88, 12, 0.25)",
                 }}
               >
-                <Sparkles size={13} /> Ask GreenBot AI →
+                <Sparkles size={13} /> Ask GREEN_AI →
               </button>
             </div>
           </section>
@@ -3539,7 +3557,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
       )}
 
       {/* ========================================================
-          VIEW 10: DEDICATED FULL SCREEN — GREENBOT AI SPACE
+          VIEW 10: DEDICATED FULL SCREEN — GREEN_AI SPACE
           ======================================================== */}
       {currentScreen === "aispace" && (
         <section className="student-fullscreen-page">
@@ -3556,8 +3574,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                 <Sparkles size={20} />
               </div>
               <div>
-                <h2>GreenBot • Student &amp; Parent AI Assistant</h2>
-                <p>Instant answers on attendance, exam scorecards, timetable, and school notices</p>
+                <h2>GREEN_AI • Student &amp; Parent AI Assistant</h2>
+                <p>Your Smart Campus AI Assistant</p>
               </div>
             </div>
 
@@ -3569,17 +3587,99 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
             </div>
           </div>
 
-          <div className="student-screen-scroll-body" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+          <div
+            className="student-screen-scroll-body"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(350px, 430px) 1fr",
+              gap: "1.2rem",
+              height: "100%",
+              minHeight: 0,
+              padding: "0.75rem 1.25rem",
+              overflow: "hidden",
+            }}
+          >
+            {/* LEFT ZONE: Mapped AI Feature Explorer */}
+            <RoleAIFeatureExplorer
+              role="student_parent"
+              onSelectPrompt={(prompt) => handleSendChatMessage(prompt)}
+            />
+
+            {/* RIGHT ZONE: GREEN_AI Interactive Chat Workspace */}
             <div
               className="student-screen-card"
               style={{
-                flex: 1,
                 display: "flex",
                 flexDirection: "column",
                 overflow: "hidden",
-                minHeight: "450px",
+                height: "100%",
+                minHeight: 0,
+                borderRadius: "20px",
+                border: "1.5px solid rgba(254, 215, 170, 0.8)",
+                boxShadow: "0 10px 32px rgba(15, 23, 42, 0.05)",
+                background: "#ffffff",
               }}
             >
+              {/* Header */}
+              <div
+                style={{
+                  padding: "0.75rem 1.15rem",
+                  background: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)",
+                  borderBottom: "1px solid rgba(254, 215, 170, 0.8)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+                  <img
+                    src="/ai_robot.png"
+                    alt="GREEN_AI"
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: "50%",
+                      objectFit: "contain",
+                      background: "#fff",
+                      border: "1.5px solid #ea580c",
+                      padding: 2,
+                    }}
+                  />
+                  <div>
+                    <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1e293b" }}>
+                      GREEN_AI Copilot
+                    </div>
+                    <div style={{ fontSize: "0.68rem", color: "#16a34a", fontWeight: 700 }}>
+                      ● Online • Grounded in Student Academic Records
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  className="student-refresh-btn"
+                  onClick={() =>
+                    setChatMessages([
+                      {
+                        id: "welcome-reset",
+                        sender: "bot",
+                        text: "Welcome to GREEN_AI! Tap any mapped capability on the left or type below to examine attendance compliance, fee ledgers, exam marks, or daily timetables.",
+                        time: "Just now",
+                        suggestions: [
+                          "What is my attendance rate?",
+                          "Show my recent exam scores",
+                          "What is my timetable today?",
+                        ],
+                      },
+                    ])
+                  }
+                  title="Clear conversation"
+                  style={{ fontSize: "0.72rem", padding: "0.3rem 0.7rem" }}
+                >
+                  <RefreshCw size={13} /> Reset
+                </button>
+              </div>
+
               {/* Chat Message Window */}
               <div
                 style={{
@@ -3651,7 +3751,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                 {isTyping && (
                   <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#64748b", fontSize: "0.75rem" }}>
                     <RefreshCw size={13} className="animate-spin" style={{ color: "#ea580c" }} />
-                    <span>GreenBot is typing an answer...</span>
+                    <span>GREEN_AI is typing an answer...</span>
                   </div>
                 )}
                 <div ref={chatMessagesEndRef} />
@@ -3684,7 +3784,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                 <input
                   type="text"
                   className="ai-chat-text-input"
-                  placeholder="Ask GreenBot about attendance, report card marks, timetable, or fees..."
+                  placeholder="Ask GREEN_AI about attendance, report card marks, timetable, or fees..."
                   value={chatInputText}
                   onChange={(e) => setChatInputText(e.target.value)}
                   onKeyDown={(e) => {
@@ -3696,7 +3796,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                 <button
                   className="ai-chat-send-btn"
                   onClick={() => handleSendChatMessage()}
-                  title="Send message to GreenBot"
+                  title="Send message to GREEN_AI"
                 >
                   <Send size={15} />
                 </button>

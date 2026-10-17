@@ -1744,7 +1744,7 @@ export default function LoginScreen({
           <span>Digital Campus Kiosk</span>
         </div>
         <button className="assistant-button" type="button" onClick={onBackToKiosk}>
-          <span className="assistant-pulse" /> Need help? <b>Ask GreenBot</b>
+          <span className="assistant-pulse" /> Need help? <b>Ask GREEN_AI</b>
         </button>
       </footer>
     </div>

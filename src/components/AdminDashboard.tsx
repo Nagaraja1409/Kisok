@@ -181,7 +181,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
   const [chatMessages, setChatMessages] = useState<Array<{ sender: "bot" | "user"; text: string; time: string; tag?: string }>>([
     {
       sender: "bot",
-      text: "Greetings, Administrator. I am GreenBot, your Institutional Intelligence Assistant. I am connected to the campus smart grid, CBSE compliance ledger, fee reconciliation, and attendance telemetry. How may I assist your administration today?",
+      text: "Hello! I'm GREEN_AI, your smart campus assistant. How can I help you today?",
       time: "Just now",
       tag: "ADMIN EXECUTIVE DESK",
     },
@@ -223,7 +223,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
       } else if (lower.includes("solar") || lower.includes("power") || lower.includes("grid") || lower.includes("energy")) {
         botResponse = "⚡ Campus Solar Smart Grid Telemetry:\n• Current Generation: 48.2 kWh (peak sun)\n• Campus Self-Sufficiency: 96% power independence\n• Battery Reserve: 88% capacity at Substation A.";
       } else {
-        botResponse = `✨ Understood, Administrator. GreenBot has logged your request: "${query}". All institutional databases, smart meters, and academic controllers are currently synchronized and running at peak performance.`;
+        botResponse = `✨ Understood, Administrator. GREEN_AI has logged your request: "${query}". All institutional databases, smart meters, and academic controllers are currently synchronized and running at peak performance.`;
       }
 
       setChatMessages((prev) => [
@@ -463,17 +463,17 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                 type="button"
                 onClick={() => setCurrentScreen("aispace")}
                 className="hero-ai-capsule-btn"
-                title="Launch Admin AI Command Space"
+                title="Launch Admin GREEN_AI Space"
               >
                 <div className="hero-ai-robo-wrap">
-                  <img src="/ai_robot.png" alt="GreenBot" className="hero-ai-robo-img" />
+                  <img src="/ai_robot.png" alt="GREEN_AI" className="hero-ai-robo-img" />
                   <span className="hero-ai-pulse-dot" />
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="hero-ai-kicker">
-                    <Sparkles size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> EXECUTIVE AI
+                    <Sparkles size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> GREEN_AI
                   </div>
-                  <span className="hero-ai-action">Ask GreenBot →</span>
+                  <span className="hero-ai-action">Ask GREEN_AI →</span>
                 </div>
               </button>
             </div>
@@ -1665,8 +1665,8 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                 <Bot size={20} />
               </div>
               <div>
-                <h2>GreenBot AI Executive Assistant</h2>
-                <p>Institutional Operations Copilot • Governance & Smart Campus Telemetry</p>
+                <h2>GREEN_AI Executive Assistant</h2>
+                <p>Your Smart Campus AI Assistant</p>
               </div>
             </div>
 
@@ -1700,12 +1700,12 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                   <div className="ai-robot-showcase-frame" style={{ borderColor: "#7c3aed", boxShadow: "0 8px 24px rgba(124, 58, 237, 0.2)" }}>
                     <img
                       src="/ai_robot.png"
-                      alt="GreenBot Robot"
+                      alt="GREEN_AI Robot"
                       className="ai-robot-showcase-img"
                     />
                   </div>
                   <div className="ai-robot-badge" style={{ background: "#7c3aed" }}>
-                    <Bot size={13} /> GREENBOT AI • ADMIN DESK
+                    <Bot size={13} /> GREEN_AI • ADMIN DESK
                   </div>
                 </div>
 
@@ -1775,7 +1775,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                       onClick={() => setChatMessages([
                         {
                           sender: "bot",
-                          text: "Conversation refreshed. GreenBot executive ledger is ready. How can I assist you?",
+                          text: "Conversation refreshed. GREEN_AI executive ledger is ready. How can I assist you?",
                           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
                           tag: "ADMIN EXECUTIVE DESK",
                         }
@@ -1804,14 +1804,14 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                       className={`ai-msg-row ${msg.sender === "bot" ? "ai-msg-row-bot" : "ai-msg-row-user"}`}
                     >
                       {msg.sender === "bot" ? (
-                        <img src="/ai_robot.png" alt="GreenBot" className="ai-msg-avatar" style={{ border: "2px solid #7c3aed" }} />
+                        <img src="/ai_robot.png" alt="GREEN_AI" className="ai-msg-avatar" style={{ border: "2px solid #7c3aed" }} />
                       ) : (
                         <img src={session?.img || "/admin_avatar.png"} alt={adminName} className="ai-msg-avatar" style={{ border: "2px solid #ea580c" }} />
                       )}
 
                       <div className="ai-msg-content-wrap">
                         <div className="ai-msg-sender-meta">
-                          <span>{msg.sender === "bot" ? "GreenBot Executive" : adminName}</span>
+                          <span>{msg.sender === "bot" ? "GREEN_AI" : adminName}</span>
                           {msg.sender === "bot" && (
                             <span
                               style={{
@@ -1839,7 +1839,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                   {/* Typing Indicator */}
                   {isTyping && (
                     <div className="ai-msg-row ai-msg-row-bot">
-                      <img src="/ai_robot.png" alt="GreenBot" className="ai-msg-avatar" style={{ border: "2px solid #7c3aed" }} />
+                      <img src="/ai_robot.png" alt="GREEN_AI" className="ai-msg-avatar" style={{ border: "2px solid #7c3aed" }} />
                       <div className="ai-typing-indicator">
                         <span className="ai-typing-dot" />
                         <span className="ai-typing-dot" />
@@ -1878,7 +1878,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                   <input
                     type="text"
                     className="ai-chat-text-input"
-                    placeholder="Ask GreenBot about attendance, admissions, finances, solar grid, compliance..."
+                    placeholder="Ask GREEN_AI about attendance, admissions, finances, solar grid, compliance..."
                     value={chatInputText}
                     onChange={(e) => setChatInputText(e.target.value)}
                     onKeyDown={(e) => {
@@ -1890,7 +1890,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                   <button
                     className="ai-chat-send-btn"
                     onClick={() => handleSendChatMessage()}
-                    title="Send instruction to GreenBot"
+                    title="Send instruction to GREEN_AI"
                     style={{ background: "#7c3aed" }}
                   >
                     <Send size={15} />

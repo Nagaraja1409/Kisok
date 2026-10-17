@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { sendGreenAiQuery } from "@/lib/greenAiClient";
+import RoleAIFeatureExplorer from "@/components/shared/RoleAIFeatureExplorer";
 import {
   ArrowLeft,
   ArrowRight,
@@ -283,11 +285,11 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
   const [hostAlertSent, setHostAlertSent] = useState(false);
   const [hostAlertTimer, setHostAlertTimer] = useState<string | null>(null);
 
-  // Ask CBS chatbot
+  // GREEN_AI chatbot
   const [chatMessages, setChatMessages] = useState<Array<{ sender: "user" | "bot"; text: string }>>([
     {
       sender: "bot",
-      text: "Namaste! Welcome to Green Valley Public School. I am CBS, your AI Campus Guide. Feel free to ask about admissions, campus buildings, fees, or host meetings!",
+      text: "Hello! I'm GREEN_AI, your smart campus assistant. I can help you explore the features available for your role. What would you like to do?",
     },
   ]);
   const [chatInput, setChatInput] = useState("");
@@ -326,31 +328,44 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
     }
   };
 
-  const handleSendChat = (queryText: string) => {
+  const handleSendChat = async (queryText: string) => {
     const trimmed = queryText.trim();
     if (!trimmed) return;
     const userMsg = trimmed;
     setChatMessages((prev) => [...prev, { sender: "user", text: userMsg }]);
     setChatInput("");
 
-    setTimeout(() => {
-      let reply = "Thank you for inquiring! For personalized assistance, our Reception desk is open in Central Gate 1 (Ext. 101) or you can visit Counter 104 in Block A.";
-      const qLower = userMsg.toLowerCase();
-      if (qLower.includes("fee") || qLower.includes("cost") || qLower.includes("charge")) {
-        reply = "Annual tuition ranges from ₹48,000 for Pre-KG to ₹84,000 for Senior Secondary STEM classes. Flexible 3-term installments and merit concessions are available.";
-      } else if (qLower.includes("time") || qLower.includes("hour") || qLower.includes("open")) {
-        reply = "Campus visitor hours are Monday to Saturday from 08:30 AM to 04:30 PM. Administrative offices remain open until 04:00 PM.";
-      } else if (qLower.includes("admission") || qLower.includes("apply") || qLower.includes("nursery") || qLower.includes("form")) {
-        reply = "Admissions for 2026-27 are currently open from Nursery through Grade XI. Collect the prospectus from Counter 104 or review the full fee matrix in Module 2.";
-      } else if (qLower.includes("principal") || qLower.includes("meet") || qLower.includes("appointment")) {
-        reply = "Dr. Kavitha Iyer (Principal) meets visitors between 10:30 AM and 01:00 PM. Please use Card 3 (Visitor Check-In) to notify the secretariat.";
-      } else if (qLower.includes("bus") || qLower.includes("transport") || qLower.includes("route")) {
-        reply = "We operate 32 GPS-monitored air-conditioned buses across 34 city routes with female attendants and parent telemetry app access.";
-      } else if (qLower.includes("where") || qLower.includes("map") || qLower.includes("block") || qLower.includes("lab")) {
-        reply = "Use Card 1 (Campus Map & Wayfinder) for interactive floor-by-floor walking routes to STEM labs, the auditorium, and academic blocks.";
-      }
-      setChatMessages((prev) => [...prev, { sender: "bot", text: reply }]);
-    }, 500);
+    try {
+      const uiContext = {
+        campusBuildings: CAMPUS_BUILDINGS,
+        visitorName: visitorSession.visitorName,
+        visitorPhone: visitorSession.visitorPhone,
+        admission: {
+          enquiry_ref: "BCE/ENQ/2026/114",
+          status: "Under Review",
+          counselling: "Contact Admissions Desk Block A Room 104",
+        },
+      };
+
+      const result = await sendGreenAiQuery({
+        message: userMsg,
+        role: "visitor_applicant",
+        userId: visitorSession.visitorName ? visitorSession.visitorName.replace(/\s+/g, "_") : "Visitor",
+        sessionId: `kiosk_visitor_${Date.now()}`,
+        uiContext,
+      });
+
+      setChatMessages((prev) => [...prev, { sender: "bot", text: result.answer }]);
+    } catch (e: any) {
+      console.error("[VisitorDashboard AI] Error:", e);
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: "Welcome to Green Valley Public School! Our Front Office desk is open in Central Gate 1 (Ext. 101) or Counter 104 in Block A.",
+        },
+      ]);
+    }
   };
 
   const handleNotifyHost = () => {
@@ -564,17 +579,17 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
                 type="button"
                 onClick={() => setCurrentScreen("ask-cbs")}
                 className="hero-ai-capsule-btn"
-                title="Launch Visitor AI Assistant"
+                title="Launch Visitor GREEN_AI Assistant"
               >
                 <div className="hero-ai-robo-wrap">
-                  <img src="/ai_robot.png" alt="GreenBot" className="hero-ai-robo-img" />
+                  <img src="/ai_robot.png" alt="GREEN_AI" className="hero-ai-robo-img" />
                   <span className="hero-ai-pulse-dot" />
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="hero-ai-kicker">
                     <Sparkles size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> AI HELPDESK
                   </div>
-                  <span className="hero-ai-action">Ask CBS →</span>
+                  <span className="hero-ai-action">Ask GREEN_AI →</span>
                 </div>
               </button>
             </div>
@@ -877,11 +892,11 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
               </div>
             </div>
 
-            {/* CONTAINER 6: 💬 ASK CBS — AI VISITOR HELPDESK */}
+            {/* CONTAINER 6: 💬 GREEN_AI — AI VISITOR HELPDESK */}
             <div
               className="student-hub-card"
               onClick={() => setCurrentScreen("ask-cbs")}
-              title="Click to launch Ask CBS AI Helpdesk"
+              title="Click to launch GREEN_AI Helpdesk"
             >
               <div className="student-hub-card-header">
                 <div className="student-card-title-group">
@@ -889,8 +904,8 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
                     <Sparkles size={19} />
                   </div>
                   <div className="student-card-headings">
-                    <h3>Ask CBS — AI Helpdesk</h3>
-                    <span>Instant Campus Q&amp;A Assistant</span>
+                    <h3>GREEN_AI</h3>
+                    <span>Your Smart Campus AI Assistant</span>
                   </div>
                 </div>
                 <span
@@ -934,7 +949,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
 
               <div className="student-hub-card-footer">
                 <span className="student-card-view-btn">
-                  <span>Launch AI Assistant</span>
+                  <span>Launch GREEN_AI</span>
                   <ArrowRight size={13} />
                 </span>
               </div>
@@ -1062,7 +1077,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
                   boxShadow: "0 2px 6px rgba(234, 88, 12, 0.25)",
                 }}
               >
-                <Sparkles size={13} /> Ask CBS AI →
+                <Sparkles size={13} /> Ask GREEN_AI →
               </button>
             </div>
           </section>
@@ -1692,7 +1707,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
       )}
 
       {/* ========================================================
-          VIEW 6: DEDICATED FULL SCREEN — ASK CBS AI HELPDESK
+          VIEW 6: DEDICATED FULL SCREEN — GREEN_AI HELPDESK
           ======================================================== */}
       {currentScreen === "ask-cbs" && (
         <section className="student-fullscreen-page">
@@ -1706,8 +1721,8 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
                 <Sparkles size={20} />
               </div>
               <div>
-                <h2>Ask CBS — Campus AI Helpdesk</h2>
-                <p>Instant Answers on Admissions, Fees, Campus Navigation &amp; Visiting Hours</p>
+                <h2>GREEN_AI — Campus AI Helpdesk</h2>
+                <p>Your Smart Campus AI Assistant</p>
               </div>
             </div>
 
@@ -1722,52 +1737,44 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
             </div>
           </div>
 
-          <div className="student-screen-scroll-body" style={{ padding: "1rem 1.5rem", overflowY: "auto", display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "1.2rem", alignItems: "start" }}>
-            {/* Left: Quick FAQs */}
-            <div style={{ background: "#ffffff", borderRadius: "18px", border: "1.5px solid rgba(254, 215, 170, 0.7)", padding: "1.25rem", boxShadow: "0 4px 18px rgba(0,0,0,0.03)" }}>
-              <h3 style={{ fontFamily: "Outfit, sans-serif", fontSize: "1.05rem", fontWeight: 800, color: "#1e293b", margin: "0 0 0.5rem 0" }}>
-                Frequently Asked Visitor Queries
-              </h3>
-              <p style={{ fontSize: "0.75rem", color: "#64748b", margin: "0 0 1rem 0" }}>
-                Click any question below to immediately ask the CBS AI assistant:
-              </p>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                {CBS_FAQS.map((faq) => (
-                  <button
-                    key={faq.q}
-                    onClick={() => handleSendChat(faq.q)}
-                    style={{
-                      padding: "0.65rem 0.85rem",
-                      borderRadius: "12px",
-                      background: "#f8fafc",
-                      border: "1px solid #e2e8f0",
-                      textAlign: "left",
-                      fontSize: "0.78rem",
-                      fontWeight: 700,
-                      color: "#1e293b",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "0.5rem",
-                      transition: "all 0.2s",
-                    }}
-                  >
-                    <span>{faq.q}</span>
-                    <ArrowRight size={13} style={{ color: "#ea580c", flexShrink: 0 }} />
-                  </button>
-                ))}
-              </div>
-            </div>
+          <div
+            className="student-screen-scroll-body"
+            style={{
+              padding: "0.75rem 1.25rem",
+              display: "grid",
+              gridTemplateColumns: "minmax(350px, 430px) 1fr",
+              gap: "1.2rem",
+              alignItems: "stretch",
+              height: "100%",
+              minHeight: 0,
+              overflow: "hidden",
+            }}
+          >
+            {/* Left: Role AI Feature Explorer */}
+            <RoleAIFeatureExplorer
+              role="visitor_applicant"
+              onSelectPrompt={(prompt) => handleSendChat(prompt)}
+            />
 
             {/* Right: Interactive Chat Console */}
-            <div style={{ background: "#ffffff", borderRadius: "18px", border: "1.5px solid rgba(254, 215, 170, 0.7)", boxShadow: "0 4px 18px rgba(0,0,0,0.03)", display: "flex", flexDirection: "column", height: "520px", overflow: "hidden" }}>
+            <div
+              style={{
+                background: "#ffffff",
+                borderRadius: "20px",
+                border: "1.5px solid rgba(254, 215, 170, 0.8)",
+                boxShadow: "0 10px 32px rgba(15, 23, 42, 0.05)",
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
+                minHeight: 0,
+                overflow: "hidden",
+              }}
+            >
               <div style={{ padding: "0.85rem 1.25rem", background: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)", borderBottom: "1px solid rgba(254, 215, 170, 0.8)", display: "flex", alignItems: "center", gap: "0.65rem" }}>
-                <img src="/ai_robot.png" alt="CBS" style={{ width: 34, height: 34, objectFit: "contain" }} />
+                <img src="/ai_robot.png" alt="GREEN_AI" style={{ width: 34, height: 34, objectFit: "contain" }} />
                 <div>
-                  <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1e293b" }}>CBS Campus AI Assistant</div>
-                  <div style={{ fontSize: "0.68rem", color: "#16a34a", fontWeight: 700 }}>● Online • Ready to answer</div>
+                  <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1e293b" }}>GREEN_AI</div>
+                  <div style={{ fontSize: "0.68rem", color: "#16a34a", fontWeight: 700 }}>● Your Smart Campus AI Assistant • Online</div>
                 </div>
               </div>
 
@@ -1796,7 +1803,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
               <div style={{ padding: "0.75rem 1rem", borderTop: "1px solid #e2e8f0", background: "#ffffff", display: "flex", gap: "0.5rem" }}>
                 <input
                   type="text"
-                  placeholder="Ask CBS about fees, timings, admissions, or directions..."
+                  placeholder="Ask GREEN_AI about fees, timings, admissions, or directions..."
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSendChat(chatInput)}

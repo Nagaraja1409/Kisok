@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { getUserSession, clearUserSession } from "@/lib/session";
 import { SessionInfo } from "@/types/auth";
+import { sendGreenAiQuery } from "@/lib/greenAiClient";
+import RoleAIFeatureExplorer from "@/components/shared/RoleAIFeatureExplorer";
 import {
   Calendar,
   CalendarDays,
@@ -667,7 +669,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
     {
       id: "msg-welcome",
       sender: "bot",
-      text: "👋 Welcome back, Rohan! I am GreenBot, your Green Valley Alumni Assistant. Ask me anything about alumni meets, reunions, ordering transcripts, scheduling campus visits, or career mentorship opportunities.",
+      text: "Hello! I'm GREEN_AI, your smart campus assistant. I can help you explore the features available for your role. What would you like to do?",
       time: "Just now",
     },
   ]);
@@ -734,7 +736,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
   };
 
   // AI Chat Handler
-  const handleSendAiMessage = (queryText?: string) => {
+  const handleSendAiMessage = async (queryText?: string) => {
     const textToSend = queryText || chatInput;
     if (!textToSend.trim()) return;
 
@@ -749,7 +751,35 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
     if (!queryText) setChatInput("");
     setIsAiTyping(true);
 
-    setTimeout(() => {
+    try {
+      const uiContext = {
+        alumniProfile: {
+          name: session?.name || "Alumnus",
+          batch: "Class of 2015",
+          degree: "Computer Science & Engineering",
+        },
+        events,
+        masterclasses,
+      };
+
+      const result = await sendGreenAiQuery({
+        message: textToSend,
+        role: "alumni_ex_employee",
+        userId: session?.name ? session.name.replace(/\s+/g, "_") : "Alumni",
+        sessionId: `kiosk_alumni_${Date.now()}`,
+        uiContext,
+      });
+
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `bot-${Date.now()}`,
+          sender: "bot" as const,
+          text: result.answer,
+          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
+        },
+      ]);
+    } catch {
       let replyText =
         "Thank you for reaching out! You can explore the dedicated sections of the Alumni Portal for reunions, transcripts, campus visits, or mentorship opportunities.";
 
@@ -777,8 +807,9 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
           time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
         },
       ]);
+    } finally {
       setIsAiTyping(false);
-    }, 600);
+    }
   };
 
   // RSVP Event Handler
@@ -1072,7 +1103,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
             { id: "visit" as AlumniScreen, name: "Plan a Visit", icon: MapPin },
             { id: "jobs" as AlumniScreen, name: "Job Board", icon: Briefcase },
             { id: "giveback" as AlumniScreen, name: "Give Back", icon: Heart },
-            { id: "aispace" as AlumniScreen, name: "GreenBot AI", icon: Sparkles },
+            { id: "aispace" as AlumniScreen, name: "GREEN_AI", icon: Sparkles },
             { id: "gallery" as AlumniScreen, name: "Photo Gallery", icon: ImageIcon },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -1273,17 +1304,17 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                 type="button"
                 onClick={() => setCurrentScreen("aispace")}
                 className="hero-ai-capsule-btn"
-                title="Launch Alumni GreenBot AI Space"
+                title="Launch Alumni GREEN_AI Space"
               >
                 <div className="hero-ai-robo-wrap">
-                  <img src="/ai_robot.png" alt="GreenBot" className="hero-ai-robo-img" />
+                  <img src="/ai_robot.png" alt="GREEN_AI" className="hero-ai-robo-img" />
                   <span className="hero-ai-pulse-dot" />
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="hero-ai-kicker">
                     <Sparkles size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> AI SPACE
                   </div>
-                  <span className="hero-ai-action">Ask GreenBot →</span>
+                  <span className="hero-ai-action">Ask GREEN_AI →</span>
                 </div>
               </button>
             </div>
@@ -1870,7 +1901,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                   </div>
                 </div>
                 <div>
-                  <div className="alumni-tile-title">GreenBot AI</div>
+                  <div className="alumni-tile-title">GREEN_AI</div>
                   <div className="alumni-tile-sub">Instant guidance</div>
                 </div>
               </div>
@@ -2046,9 +2077,9 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
               </div>
             </div>
 
-            {/* RIGHT SIDEBAR COLUMN: GREENBOT AI + CURRENT AFFAIRS + MENTORSHIP */}
+            {/* RIGHT SIDEBAR COLUMN: GREEN_AI + CURRENT AFFAIRS + MENTORSHIP */}
             <div className="alumni-right-col">
-              {/* GREENBOT AI ASSISTANT CARD */}
+              {/* GREEN_AI ASSISTANT CARD */}
               <div
                 style={{
                   background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)",
@@ -2088,7 +2119,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                         gap: "5px",
                       }}
                     >
-                      GreenBot AI Assistant <Sparkles size={13} style={{ color: "#facc15" }} />
+                      GREEN_AI <Sparkles size={13} style={{ color: "#facc15" }} />
                     </h4>
                     <p style={{ margin: "2px 0 0", fontSize: "0.68rem", color: "#cbd5e1" }}>
                       Instant guidance on events, transcripts, visits & mentors.
@@ -2137,7 +2168,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                       marginBottom: "0.65rem",
                     }}
                   >
-                    <strong>GreenBot:</strong> {chatMessages[chatMessages.length - 1].text}
+                    <strong>GREEN_AI:</strong> {chatMessages[chatMessages.length - 1].text}
                   </div>
                 )}
 
@@ -2156,7 +2187,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                   <Mic size={14} style={{ color: "#94a3b8" }} />
                   <input
                     type="text"
-                    placeholder="Ask GreenBot anything..."
+                    placeholder="Ask GREEN_AI anything..."
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSendAiMessage()}
@@ -4147,7 +4178,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
       )}
 
       {/* ========================================================
-          VIEW 9: AI ASSISTANT SPACE (GREENBOT)
+          VIEW 9: AI ASSISTANT SPACE (GREEN_AI)
           ======================================================== */}
       {currentScreen === "aispace" && (
         <section className="student-fullscreen-page">
@@ -4160,8 +4191,8 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                 <Bot size={20} />
               </div>
               <div>
-                <h2>GreenBot AI Assistant (Alumni & Legacy Space)</h2>
-                <p>Instant guidance on reunions, transcript verification, campus passes, and mentorship opportunities.</p>
+                <h2>GREEN_AI • Alumni &amp; Legacy Space</h2>
+                <p>Your Smart Campus AI Assistant</p>
               </div>
             </div>
             <div className="student-screen-nav-tools">
@@ -4186,37 +4217,102 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
           <div
             className="student-screen-scroll-body"
             style={{
-              padding: "1rem clamp(1rem, 2vw, 2.5rem)",
-              display: "flex",
-              flexDirection: "column",
+              padding: "0.75rem 1.25rem",
+              display: "grid",
+              gridTemplateColumns: "minmax(350px, 430px) 1fr",
+              gap: "1.2rem",
+              alignItems: "stretch",
               height: "100%",
+              minHeight: 0,
+              overflow: "hidden",
             }}
           >
+            {/* LEFT ZONE: Role AI Feature Explorer */}
+            <RoleAIFeatureExplorer
+              role="alumni_ex_employee"
+              onSelectPrompt={(prompt) => handleSendAiMessage(prompt)}
+            />
+
+            {/* RIGHT ZONE: Interactive Chat Workspace */}
             <div
               style={{
-                maxWidth: 900,
-                width: "100%",
-                margin: "0 auto",
                 display: "flex",
                 flexDirection: "column",
-                flex: 1,
+                overflow: "hidden",
+                height: "100%",
                 minHeight: 0,
+                borderRadius: "20px",
+                border: "1.5px solid rgba(221, 214, 254, 0.8)",
+                boxShadow: "0 10px 32px rgba(15, 23, 42, 0.05)",
+                background: "#ffffff",
               }}
             >
-              {/* CHAT MESSAGES LOG */}
+              {/* Header */}
+              <div
+                style={{
+                  padding: "0.75rem 1.15rem",
+                  background: "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)",
+                  borderBottom: "1px solid rgba(221, 214, 254, 0.8)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+                  <img
+                    src="/ai_robot.png"
+                    alt="GREEN_AI"
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: "50%",
+                      objectFit: "contain",
+                      background: "#fff",
+                      border: "1.5px solid #7c3aed",
+                      padding: 2,
+                    }}
+                  />
+                  <div>
+                    <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1e293b" }}>
+                      GREEN_AI Alumni Concierge
+                    </div>
+                    <div style={{ fontSize: "0.68rem", color: "#7c3aed", fontWeight: 700 }}>
+                      ● Online • Grounded in Alumni Directory &amp; Archives
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  className="student-refresh-btn"
+                  onClick={() =>
+                    setChatMessages([
+                      {
+                        id: "welcome-alumni-reset",
+                        sender: "bot",
+                        text: "Welcome to GREEN_AI! Tap any mapped alumni feature on the left or ask about reunions, transcripts, or mentorship programs.",
+                        time: "Just now",
+                      },
+                    ])
+                  }
+                  title="Clear conversation"
+                  style={{ fontSize: "0.72rem", padding: "0.3rem 0.7rem" }}
+                >
+                  <RefreshCw size={13} /> Reset
+                </button>
+              </div>
+
+              {/* Chat Messages */}
               <div
                 style={{
                   flex: 1,
-                  minHeight: 320,
+                  minHeight: 0,
                   overflowY: "auto",
-                  background: "#ffffff",
-                  borderRadius: "18px",
-                  border: "1.2px solid rgba(251, 146, 60, 0.28)",
+                  background: "#f8fafc",
                   padding: "1.25rem",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "1rem",
-                  boxShadow: "0 4px 14px rgba(0,0,0,0.03)",
+                  gap: "0.85rem",
                 }}
               >
                 {chatMessages.map((msg) => (
@@ -4224,125 +4320,86 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                     key={msg.id}
                     style={{
                       display: "flex",
-                      justifyContent: msg.sender === "user" ? "flex-end" : "flex-start",
-                      alignItems: "flex-start",
-                      gap: "8px",
+                      flexDirection: "column",
+                      alignItems: msg.sender === "user" ? "flex-end" : "flex-start",
+                      maxWidth: "80%",
+                      alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
                     }}
                   >
-                    {msg.sender === "bot" && (
-                      <div
-                        style={{
-                          width: 34,
-                          height: 34,
-                          borderRadius: "50%",
-                          background: "#fff7ed",
-                          border: "1.5px solid #fed7aa",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "#ea580c",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <Bot size={18} />
-                      </div>
-                    )}
                     <div
                       style={{
-                        maxWidth: "75%",
-                        padding: "10px 14px",
-                        borderRadius: "14px",
-                        fontSize: "0.82rem",
-                        lineHeight: 1.45,
-                        background: msg.sender === "user" ? "#ea580c" : "#fff7ed",
+                        padding: "0.75rem 1rem",
+                        borderRadius: "16px",
+                        background: msg.sender === "user" ? "#7c3aed" : "#ffffff",
                         color: msg.sender === "user" ? "#ffffff" : "#1e293b",
-                        border: msg.sender === "user" ? "none" : "1px solid rgba(251, 146, 60, 0.3)",
+                        fontSize: "0.82rem",
+                        lineHeight: 1.5,
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
+                        border: msg.sender === "user" ? "none" : "1px solid rgba(226, 232, 240, 0.9)",
+                        whiteSpace: "pre-wrap",
                       }}
                     >
-                      <p style={{ margin: 0 }}>{msg.text}</p>
-                      <span
-                        style={{
-                          display: "block",
-                          marginTop: 4,
-                          fontSize: "0.64rem",
-                          color: msg.sender === "user" ? "rgba(255,255,255,0.8)" : "#94a3b8",
-                          textAlign: msg.sender === "user" ? "right" : "left",
-                        }}
-                      >
-                        {msg.time}
-                      </span>
+                      {msg.text}
                     </div>
+                    <span style={{ fontSize: "0.65rem", color: "#94a3b8", marginTop: "3px", padding: "0 4px" }}>
+                      {msg.time}
+                    </span>
                   </div>
                 ))}
                 {isAiTyping && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#ea580c", fontSize: "0.78rem" }}>
-                    <RefreshCw size={14} className="animate-spin" />
-                    <span>GreenBot is typing an answer...</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#7c3aed", fontSize: "0.75rem" }}>
+                    <RefreshCw size={13} className="animate-spin" />
+                    <span>GREEN_AI is typing an answer...</span>
                   </div>
                 )}
                 <div ref={chatBottomRef} />
               </div>
 
-              {/* QUICK SUGGESTIONS */}
-              <div style={{ display: "flex", gap: "6px", overflowX: "auto", padding: "10px 0" }}>
-                {Object.keys(AI_PRESET_QA).map((q, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleSendAiMessage(q)}
-                    style={{
-                      padding: "5px 12px",
-                      borderRadius: "9999px",
-                      background: "#ffffff",
-                      border: "1px solid rgba(251, 146, 60, 0.4)",
-                      color: "#9a3412",
-                      fontSize: "0.74rem",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-
-              {/* CHAT INPUT FORM */}
+              {/* Input bar */}
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
                   background: "#ffffff",
-                  padding: "8px 12px",
-                  borderRadius: "14px",
-                  border: "1.5px solid rgba(251, 146, 60, 0.4)",
+                  padding: "0.65rem 1rem",
+                  borderTop: "1px solid rgba(226, 232, 240, 0.8)",
+                  flexShrink: 0,
                 }}
               >
                 <input
                   type="text"
-                  placeholder="Type a question for GreenBot AI..."
+                  placeholder="Ask GREEN_AI about batch reunions, transcripts, mentorship..."
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSendAiMessage()}
-                  style={{ border: "none", outline: "none", fontSize: "0.85rem", flex: 1, padding: "4px" }}
+                  style={{
+                    flex: 1,
+                    background: "#f8fafc",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "9999px",
+                    padding: "0.5rem 1rem",
+                    fontSize: "0.82rem",
+                    outline: "none",
+                  }}
                 />
                 <button
                   onClick={() => handleSendAiMessage()}
                   style={{
-                    padding: "8px 16px",
-                    borderRadius: 10,
-                    background: "#ea580c",
+                    width: 38,
+                    height: 38,
+                    borderRadius: "50%",
+                    background: "#7c3aed",
                     color: "#ffffff",
                     border: "none",
-                    fontSize: "0.82rem",
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    display: "inline-flex",
+                    display: "flex",
                     alignItems: "center",
-                    gap: "6px",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    boxShadow: "0 2px 8px rgba(124, 58, 237, 0.3)",
                   }}
                 >
-                  <Send size={14} /> Send
+                  <Send size={15} />
                 </button>
               </div>
             </div>

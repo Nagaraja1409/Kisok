@@ -1,148 +1,227 @@
-# 🏫 Green Valley Public School — Smart Campus Kiosk & Role Portal (2026)
+# 🏫 Green Valley Public School — Smart Campus Kiosk & GREEN_AI Ecosystem (2026)
 
-A modern, touch-interactive Digital Campus Kiosk and comprehensive Role-Based Portal system built for **Green Valley Public School**. Designed for physical touchscreen kiosk deployment on campus as well as cross-device web portal access.
+A state-of-the-art, touch-interactive Digital Campus Kiosk and comprehensive Role-Based Portal system built for **Green Valley Public School**. Designed for physical touchscreen kiosk deployment across campus terminals (100dvh kiosk mode) as well as cross-device responsive portal access.
 
 ---
 
-## 🌟 Key Features
+## 🌟 Architecture Overview
 
-### 🖥️ 1. Interactive Campus Kiosk Experience (`/`)
-- **Touchscreen & Kiosk-Ready**: Built-in fullscreen toggle (`Fullscreen API`) ideal for standalone campus kiosk terminals.
-- **Live Clock & Announcements**: Dynamic real-time campus clock and urgent bulletin ticker.
-- **Campus AI Assistant (Chatbot)**: Floating interactive virtual assistant offering instant campus navigation and answers.
-- **Quick Role Switcher**: One-tap access to dedicated student, staff, admin, and alumni workspaces.
-- **Campus Showcase**: Quick access to news, upcoming events, academic achievements, galleries, and campus directory.
+```
+                      ┌───────────────────────────────────────────┐
+                      │    Campus Touchscreen Kiosk Terminal      │
+                      │    Next.js 16 + React 19 (App Router)     │
+                      │    Port: http://localhost:3000            │
+                      └─────────────────────┬─────────────────────┘
+                                            │
+                                            │ 1. User Interaction / Touch Prompts
+                                            │ 2. Live VAPS ERP Session State
+                                            ▼
+                      ┌───────────────────────────────────────────┐
+                      │    Next.js API Gateway (/api/ai/chat)     │
+                      │    - Session Authentication Validation    │
+                      │    - UI Context Packaging & Forwarding    │
+                      │    - Automated Local Failover Buffer      │
+                      └─────────────────────┬─────────────────────┘
+                                            │
+                                            │ HTTP POST /api/v1/green-ai/chat
+                                            │ (Dynamic UI Context, Zero CSV reads)
+                                            ▼
+                      ┌───────────────────────────────────────────┐
+                      │     FastAPI Multi-Agent Backend Engine    │
+                      │     Port: http://127.0.0.1:8000           │
+                      ├───────────────────────────────────────────┤
+                      │ • LangGraph State Machine & Supervisor    │
+                      │ • Dynamic UI ERP Client (ui_client.py)    │
+                      │ • Role Guardrails & Grounding Validator   │
+                      │ • NVIDIA NIM / Groq LLM Inference         │
+                      └───────────────────────────────────────────┘
+```
 
-### 👥 2. Role-Based Dashboards & Portals
-- **🎓 Student Portal (`/student`)**:
-  - Live attendance tracker & subject-wise breakdown
-  - Daily class timetable & exam schedules
-  - Homework & assignment submission tracking
-  - Fee payment history & receipt download
-  - Digital library book status & borrowing records
-- **👨‍🏫 Staff & Faculty Portal (`/staff`)**:
-  - Class attendance marking & batch management
-  - Gradebook, assignment review, and marks entry
-  - Staff leave balance & leave application workflow
-  - Notice board publishing & teacher timetable
-- **⚙️ Administrator Dashboard (`/admin`)**:
-  - Campus metrics (total students, staff count, attendance percentages, fee collection stats)
-  - User and role management
-  - Campus-wide emergency alerts & announcement broadcasting
-  - Kiosk hardware/system diagnostics and configuration
-- **🤝 Alumni Portal (`/alumni`)**:
-  - Alumni directory & networking
-  - Mentorship program registry
-  - Reunion events & campus milestone fundraisers
-- **👨‍👩‍👧 Parent Access (`/parent`)**:
-  - Integrated student progress monitoring and notifications
+---
 
-### 🔐 3. Authentication & Security (`/login`)
-- Unified role-based login gateway with role switching tabs.
-- Passcode & credential verification.
-- Direct quick-redirect to respective dashboards upon authorization.
+## 🚀 Key Features
+
+### 1. 🤖 GREEN_AI Role-Based Dual-Zone Workspaces
+Each user role features a dedicated, touch-optimized **GREEN_AI Space** accessed directly from dashboard quick actions (e.g. `title="Launch Student GREEN_AI Space"`):
+- **Left Zone (`RoleAIFeatureExplorer`)**: Interactive catalog of mapped AI capabilities with category tabs (`Academic`, `Compliance`, `Schedule`, `Administrative`, `Navigation`, `General`), search filter, dynamic/static grounding badges, and one-tap prompt chips.
+- **Right Zone (Interactive Chat Workspace)**: Real-time conversational agent grounded in verified data, with reasoning badges, agent source indicators, and follow-up suggestion pills.
+
+---
+
+### 2. 📋 Role-Based AI Feature Mapping
+
+| Role | Grounding Mode | Key AI Capabilities | Sample Quick Prompts |
+|---|---|---|---|
+| **🎓 Student & Parent** | `LIVE DYNAMIC`<br>*(Real VAPS ERP session data)* | • Attendance Risk Diagnostics (CBSE 75% threshold)<br>• Academic Performance & Marks Trajectory<br>• Fee Ledger & Installment Balance<br>• Daily Timetable & Room Allotments<br>• Homework Diary & Submission Deadlines<br>• Term Exam Date Sheets & Reporting Hours<br>• Library Books & Reference Locator<br>• Formal Student Leave Preview | *"What is my attendance rate?"*<br>*"Am I at risk of falling below 75%?"*<br>*"Do I have pending fee balance?"*<br>*"What is my timetable today?"*<br>*"Show homework diary"* |
+| **👨‍🏫 Teacher & Staff** | `LIVE DYNAMIC`<br>*(Real faculty roster & grading data)* | • Teaching Schedule & Room Briefings<br>• Class 10A Gradebook & Marks Analytics<br>• Chronic Absenteeism Risk Scoring<br>• Lesson Preparation & Quiz Formulator<br>• Academic Meetings & Sync Briefings<br>• CBSE Norms & Competency Rubrics<br>• Casual Leave Requisition Preview | *"What are my classes today?"*<br>*"Show student grading status"*<br>*"Which students have chronic absence risk?"*<br>*"Lesson plan for Quadratic Equations"*<br>*"CBSE Term-2 assessment guidelines"* |
+| **🏛️ Campus Visitor** | `STATIC GUIDE`<br>*(Curated campus directory & FAQs)* | • Admissions Guidance & Eligibility (Nursery - XII)<br>• Application & Enquiry BCE/ENQ/2026/114 Tracking<br>• Campus Wayfinding & Navigation to STEM labs<br>• Guided Campus Tour & Consultation Booking<br>• CBSE Affiliation #1930421 & NAAC A++ Info | *"What is the admission procedure for Class VI?"*<br>*"What is the annual fee structure?"*<br>*"Where is the Kalam STEM Center?"*<br>*"Track status for enquiry BCE/ENQ/2026/114"* |
+| **🤝 Alumni & Legacy** | `STATIC GUIDE`<br>*(Alumni directory & archives)* | • Official Graduation Transcript Procedures<br>• Founders Day & Batch Reunion Calendars<br>• Student Mentorship & Career Volunteer Registry<br>• Notable Alumni Hall of Fame & Archives<br>• Former Faculty Service Certificates | *"When is the next Alumni Meet?"*<br>*"How do I request my transcripts?"*<br>*"How can I mentor current students?"*<br>*"Tell me about Class of 2015"* |
+| **⚙️ Administrator** | Unmodified | Management dashboard with campus KPIs, fee collection, staff rosters, and hardware diagnostics *(Admin executive intelligence tools explicitly isolated per system specs)*. | Admin controls only |
+
+---
+
+### 3. ⚡ Zero-CSV Dynamic Context Pipeline
+- **Legacy CSV Deprecation**: Static `.csv` disk files in `backend/data/` have been removed in favor of real-time payload grounding.
+- **Dynamic UI ERP Client (`backend/app/tools/erp/ui_client.py`)**: Seamlessly parses incoming `ui_context` (student attendance metrics, fee records, examination scores, faculty rosters) directly from the Next.js UI session state.
+- **In-Memory Fallback**: When offline or in test environments, in-memory repositories provide fallback data without throwing file I/O exceptions.
 
 ---
 
 ## 🛠️ Technology Stack
 
-| Layer | Technology |
-|---|---|
-| **Framework** | [Next.js 16](https://nextjs.org/) (App Router) |
-| **Library** | [React 19](https://react.dev/) |
-| **Language** | [TypeScript 5](https://www.typescriptlang.org/) |
-| **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) + Custom Glassmorphic Design System |
-| **Icons** | [Lucide React](https://lucide.dev/) |
+| Layer | Technology | Details |
+|---|---|---|
+| **Frontend Framework** | [Next.js 16](https://nextjs.org/) (App Router) | Turbopack-powered high performance bundler |
+| **UI Library** | [React 19](https://react.dev/) | Modern hooks, concurrent rendering, transition states |
+| **Language** | [TypeScript 5](https://www.typescriptlang.org/) | Strict type contracts across models & props |
+| **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) + Custom CSS | Glassmorphism, 100dvh kiosk viewport, responsive grids |
+| **Icons** | [Lucide React](https://lucide.dev/) | Accessible SVG icons for touch kiosks |
+| **Backend Framework** | [FastAPI](https://fastapi.tiangolo.com/) + Uvicorn | Asynchronous Python REST microservice |
+| **AI Orchestration** | [LangGraph](https://langchain-ai.github.io/langgraph/) | Role-scoped multi-agent graphs with state tracking |
+| **LLM Inference** | NVIDIA NIM / Groq / OpenAI | Low-latency inference with reasoning traces |
 
 ---
 
-## 📁 Project Directory Structure
+## 📁 Directory Structure
 
 ```text
-Kiosk2026/
+Kisok/
 ├── src/
 │   ├── app/
-│   │   ├── admin/           # Admin portal route
-│   │   ├── alumni/          # Alumni network route
-│   │   ├── login/           # Universal authentication portal
-│   │   ├── parent/          # Parent viewer route
-│   │   ├── staff/           # Faculty & staff dashboard route
-│   │   ├── student/         # Student portal route
-│   │   ├── dashboards.css   # Role-specific dashboard themes & styles
-│   │   ├── globals.css      # Core global styles, tokens, and animations
-│   │   ├── layout.tsx       # Root layout configuration
-│   │   └── page.tsx         # Main interactive kiosk landing screen
-│   └── components/
-│       ├── AdminDashboard.tsx    # Admin interface component
-│       ├── AlumniDashboard.tsx   # Alumni network component
-│       ├── LoginScreen.tsx       # Role authentication component
-│       ├── StaffDashboard.tsx    # Staff management component
-│       └── StudentDashboard.tsx  # Student portal component
-├── public/                  # Static campus assets & icons
-├── package.json             # Scripts & dependencies
-├── tsconfig.json            # TypeScript configuration
-└── README.md                # Project documentation
+│   │   ├── api/
+│   │   │   └── ai/chat/route.ts      # Server-side AI proxy to FastAPI backend
+│   │   ├── admin/                    # Administrator portal
+│   │   ├── alumni/                   # Alumni legacy network
+│   │   ├── campus-info/              # Public information & wayfinding portal
+│   │   ├── login/                    # Universal role authentication
+│   │   ├── staff/                    # Faculty & teacher workspace
+│   │   ├── student/                  # Student & parent academic command portal
+│   │   ├── visitor/                  # Visitor admissions & reception portal
+│   │   ├── dashboards.css            # Kiosk design system & AI Space styles
+│   │   └── globals.css               # Core global tokens & animations
+│   ├── components/
+│   │   ├── shared/
+│   │   │   └── RoleAIFeatureExplorer.tsx  # Reusable mapped AI capabilities component
+│   │   ├── StudentDashboard.tsx      # Student portal with dual-zone AI Space
+│   │   ├── StaffDashboard.tsx        # Staff portal with dual-zone AI Space
+│   │   ├── VisitorDashboard.tsx      # Visitor helpdesk with static guide
+│   │   ├── AlumniDashboard.tsx       # Alumni concierge with legacy guide
+│   │   └── AdminDashboard.tsx        # Executive management dashboard
+│   ├── config/
+│   │   ├── api.ts                    # API endpoints configuration
+│   │   └── roleAiFeatures.ts         # Central role-based AI features registry
+│   └── lib/
+│       ├── greenAiClient.ts          # Frontend GREEN_AI query client
+│       └── session.ts                # Session management & token storage
+├── backend/
+│   ├── app/
+│   │   ├── api/routes/green_ai.py    # /api/v1/green-ai/chat endpoint
+│   │   ├── copilot/copilot.py        # Copilot orchestrator with ui_context
+│   │   ├── engines/context_engine.py # Context scoping engine
+│   │   ├── graph/                    # LangGraph multi-agent nodes & state
+│   │   ├── prediction/engine.py      # Academic trajectory & marks predictor
+│   │   ├── schemas/green_ai.py       # Pydantic request/response schemas
+│   │   └── tools/erp/ui_client.py    # Dynamic UI ERP client (zero CSV)
+│   ├── tests/                        # 66-test pytest validation suite
+│   ├── requirements.txt              # Python dependencies
+│   └── run.py                        # Uvicorn server launcher
+├── package.json                      # Next.js scripts & packages
+├── tsconfig.json                     # TypeScript compiler configuration
+└── README.md                         # Comprehensive documentation
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Running the Project Locally
 
-### Prerequisites
-- **Node.js**: v18.17.0 or higher (Node 20+ recommended)
-- **Package Manager**: `npm`, `yarn`, `pnpm`, or `bun`
-
-### Installation
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/sushmashree2003/Kiosk2026.git
-   cd Kiosk2026
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-3. **Start the local development server**:
-   ```bash
-   npm run dev
-   ```
-
-4. **Access the application**:
-   Open [http://localhost:3000](http://localhost:3000) in your web browser.
+### 1. Prerequisites
+- **Node.js**: v18.17.0+ (Node 20 or 22 recommended)
+- **Python**: 3.11 or 3.12+
+- **Package Managers**: `npm` (frontend) and `pip` (backend)
 
 ---
 
-## 📜 Available Scripts
+### 2. Start the FastAPI Backend
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Runs the Next.js development server at `http://localhost:3000` |
-| `npm run build` | Compiles and optimizes the project for production |
-| `npm run start` | Starts the production server after running `build` |
-| `npm run lint` | Runs ESLint to check for code style and syntax issues |
+Open a terminal and run:
+
+```bash
+cd backend
+
+# Install dependencies (virtual environment recommended)
+pip install -r requirements.txt
+
+# Start the FastAPI server on port 8000
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+The backend will be available at:
+- **API Base URL**: `http://127.0.0.1:8000`
+- **Interactive OpenAPI Docs**: `http://127.0.0.1:8000/docs`
+- **Health Check**: `http://127.0.0.1:8000/health`
 
 ---
 
-## 🖥️ Deploying in Kiosk Mode
+### 3. Start the Next.js Frontend
 
-To run this application on a physical touch kiosk or Raspberry Pi / Intel NUC display:
+Open a second terminal at the project root:
+
+```bash
+# Install frontend dependencies
+npm install
+
+# Start Next.js development server
+npm run dev
+```
+
+The frontend will be available at:
+- **Campus Kiosk URL**: `http://localhost:3000`
+
+---
+
+## 🧪 Testing & Verification
+
+### Run Backend Pytest Suite
+```bash
+cd backend
+pytest tests/test_dynamic_ui.py tests/test_green_ai.py tests/test_service.py tests/test_v1_orchestration.py tests/test_voice_and_ui.py
+```
+> **Result**: `66 passed, 0 failures` (Verifies dynamic UI ingestion, LangGraph node execution, Copilot context scoping, and voice endpoints).
+
+### Run Frontend TypeScript & Build Check
+```bash
+# Verify TypeScript types
+npx tsc --noEmit
+
+# Verify Next.js production build
+npm run build
+```
+> **Result**: `Compiled successfully`, all 26 static/dynamic routes generated cleanly with zero errors.
+
+---
+
+## 🖥️ Deploying in Kiosk Terminal Mode
+
+For dedicated physical touchscreen kiosks (Raspberry Pi 5, Intel NUC, or Windows Touch Terminal):
 
 1. **Build and start production**:
    ```bash
    npm run build
    npm run start
    ```
+
 2. **Launch Chromium in Fullscreen Kiosk Mode**:
    ```bash
    chromium-browser --kiosk --noerrdialogs --disable-infobars --check-for-update-interval=31536000 http://localhost:3000
    ```
-3. Alternatively, click the **Maximize (Fullscreen)** button on the top-right corner of the kiosk homepage.
+
+3. **Touch Interaction Standards**:
+   - Minimum touch-target sizes &ge; 44px
+   - Dual-zone layouts with independent smooth scrolling
+   - Auto-scrolling chat history with quick one-tap suggestion chips
 
 ---
 
 ## 📝 License & Attribution
 
-Developed for **Green Valley Public School**. Built with Next.js, React, and Tailwind CSS.
+Developed for **Green Valley Public School**. Built with Next.js 16, React 19, FastAPI, LangGraph, and Tailwind CSS.

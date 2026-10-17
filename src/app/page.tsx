@@ -50,7 +50,7 @@ export default function Home() {
   >([
     {
       sender: "bot",
-      text: "Hello! Welcome to Green Valley Public School. Click anywhere or select your role to proceed to your portal.",
+      text: "Hello! I'm GREEN_AI, your smart campus assistant. How can I help you today?",
     },
   ]);
 
@@ -1018,7 +1018,7 @@ export default function Home() {
               >
                 <img
                   src="/school_bot.jpg"
-                  alt="School Bot"
+                  alt="GREEN_AI"
                   style={{
                     width: 44,
                     height: 44,
@@ -1035,10 +1035,10 @@ export default function Home() {
                       fontWeight: 700,
                     }}
                   >
-                    Green Valley AI Assistant
+                    GREEN_AI
                   </h3>
                   <p style={{ fontSize: "0.75rem", opacity: 0.9 }}>
-                    Online • 24/7 School Kiosk Help
+                    Your Smart Campus AI Assistant
                   </p>
                 </div>
               </div>
@@ -1169,7 +1169,7 @@ export default function Home() {
             >
               <input
                 type="text"
-                placeholder="Ask our AI assistant anything..."
+                placeholder="Ask GREEN_AI anything..."
                 value={botChatInput}
                 onChange={(e) => setBotChatInput(e.target.value)}
                 onKeyDown={(e) =>
