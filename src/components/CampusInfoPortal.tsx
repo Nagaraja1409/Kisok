@@ -407,10 +407,10 @@ export default function CampusInfoPortal({
 
         {/* Right Status & Clock */}
         <div className="mv-header-tools">
-          <div className="mv-live-pill">
+          {/* <div className="mv-live-pill">
             <span className="mv-pulse-dot" />
             <span>Kiosk Online</span>
-          </div>
+          </div> */}
 
           <div className="mv-clock-pill">
             <Calendar size={13} style={{ color: "#ea580c" }} />

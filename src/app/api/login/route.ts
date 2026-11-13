@@ -19,11 +19,11 @@ export async function POST(req: NextRequest) {
       role?.toLowerCase() === "alumni" ||
       role?.toLowerCase() === "ex-staff" ||
       role?.toLowerCase() === "former-staff" ||
-      username?.trim().toLowerCase().startsWith("rohan.sharma") ||
+      username?.trim().toLowerCase().startsWith("Rohan.Sharma") ||
       username?.trim().toLowerCase().includes("alumni");
 
     if (isAlumni) {
-      const uname = username?.trim() || "rohan.sharma.2015";
+      const uname = username?.trim() || "Rohan.Sharma";
       const alumniResponse: LoginResponseDTO = {
         userName: uname,
         roleforlogin: "Alumni",
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
         roleId: 4,
         empcode: 0,
         AMST_ID: 201501,
-        ASMAY_Year: "Batch 2015",
+        ASMAY_Year: "Batch 2019",
         asmaY_Id: 195,
         MI_Idforlogin: Number(mI_ID || 31),
         instituteName: "Madhuvan Vatika - MVPS",
