@@ -32,7 +32,7 @@ import {
   X,
 } from "lucide-react";
 import { SessionInfo } from "@/types/auth";
-import { saveUserSession, getRememberedUser } from "@/lib/session";
+import { saveUserSession, getRememberedUser, getInstituteLogo, getInstituteName, getBackgroundLo } from "@/lib/session";
 import { CLIENT_API_ENDPOINTS } from "@/config/api";
 
 export type RoleType = "student" | "staff" | "visitor" | "alumni";
@@ -77,6 +77,8 @@ export default function LoginScreen({
 }: LoginScreenProps) {
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [schoolLogo, setSchoolLogo] = useState<string>(() => getInstituteLogo());
+  const [schoolName, setSchoolName] = useState<string>(() => getInstituteName());
 
   // Real-time clock & fullscreen sync
   useEffect(() => {
@@ -91,6 +93,45 @@ export default function LoginScreen({
     return () => {
       clearInterval(timer);
       document.removeEventListener("fullscreenchange", handleFsChange);
+    };
+  }, []);
+
+  // Dynamically sync branding from /api/branding on mount if not yet authenticated
+  useEffect(() => {
+    // If an active session already has a logo from login, login takes first priority
+    try {
+      const sessionLogo = sessionStorage.getItem("initlogo");
+      if (sessionLogo && sessionLogo.trim() !== "") {
+        return;
+      }
+    } catch {
+      // ignore
+    }
+
+    let isMounted = true;
+    fetch("/api/branding", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isMounted || !data) return;
+        if (data.logo) {
+          setSchoolLogo(data.logo);
+          try {
+            localStorage.setItem("kiosk_institute_logo", data.logo);
+          } catch { }
+        }
+        if (data.name) {
+          setSchoolName(data.name);
+          try {
+            localStorage.setItem("kiosk_institute_name", data.name);
+          } catch { }
+        }
+      })
+      .catch(() => {
+        // retain fallback
+      });
+
+    return () => {
+      isMounted = false;
     };
   }, []);
 
@@ -237,12 +278,12 @@ export default function LoginScreen({
       accentGradient: "linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #059669 100%)",
       haloColor: "rgba(234, 88, 12, 0.22)",
       heroTag: "GLOBAL GVIAN ALUMNI & EX-STAFF NETWORK",
-      heroHeadline1: "Once a GVian, Always a GVian",
+      heroHeadline1: "",
       heroHeadlineHighlight: "Reconnect, Mentor & Shape the Future",
       heroSubtext:
         "Connect with batchmates and former staff worldwide, mentor ambitious students, register for annual reunions, and celebrate alma mater achievements.",
       sloganTitle: "GVIAN ALUMNI & EX-STAFF CREED",
-      sloganQuote: "“Once a GVian, Always a GVian — Carrying forward a legacy of honor, excellence, and shared memories.”",
+      sloganQuote: "“.”",
       sloganMotto: "Honor the Past • Shape the Present • Inspire the Future",
       features: [
         {
@@ -291,6 +332,24 @@ export default function LoginScreen({
   const [visitorNameError, setVisitorNameError] = useState("");
   const [visitorPhoneError, setVisitorPhoneError] = useState("");
 
+  // Dynamic Background from env parameter 'backgroupdlo'
+  const [bgImage, setBgImage] = useState<string>(() => getBackgroundLo());
+
+  useEffect(() => {
+    fetch("/api/branding", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.backgroupdlo) {
+          setBgImage(data.backgroupdlo);
+          try {
+            sessionStorage.setItem("backgroupdlo", data.backgroupdlo);
+            localStorage.setItem("kiosk_backgroupdlo", data.backgroupdlo);
+          } catch { }
+        }
+      })
+      .catch(() => { });
+  }, []);
+
   // Sync default user when role changes externally or check remembered user
   useEffect(() => {
     const remembered = getRememberedUser();
@@ -328,6 +387,7 @@ export default function LoginScreen({
           username: username.trim(),
           password: password || "alumni",
           mI_ID: institutionId,
+          MI_Subdomain: CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
           loginUrl: serverUrl,
           role: role,
         }),
@@ -336,6 +396,79 @@ export default function LoginScreen({
       const result = await response.json();
 
       if (result.success && result.session) {
+        // Dynamically capture institution logo from response if present
+        const dynamicLogo =
+          result.session.initlogo ||
+          result.data?.mI_Logo ||
+          result.data?.mI_logo ||
+          "";
+        if (dynamicLogo) {
+          result.session.initlogo = dynamicLogo;
+          result.session.img = dynamicLogo;
+          setSchoolLogo(dynamicLogo);
+        }
+        const dynamicName =
+          result.session.initname ||
+          result.data?.MI_Name ||
+          result.data?.mI_Name ||
+          result.data?.instituteName ||
+          "";
+        if (dynamicName) {
+          result.session.initname = dynamicName;
+          setSchoolName(dynamicName);
+          sessionStorage.setItem("initname", dynamicName);
+          localStorage.setItem("kiosk_institute_name", dynamicName);
+        }
+
+        // Dynamically capture ASMAY_Id (Academic Year ID) from login API response into session
+        const dynamicAsmayId =
+          result.session.ASMAY_Id ||
+          result.data?.asmaY_Id ||
+          result.data?.ASMAY_Id ||
+          result.data?.asmay_id ||
+          0;
+        if (dynamicAsmayId) {
+          result.session.ASMAY_Id = Number(dynamicAsmayId);
+          sessionStorage.setItem("ASMAY_Id", String(dynamicAsmayId));
+        }
+
+        // Dynamically capture MI_Id (Institution ID) from login API response into session
+        const dynamicMiId =
+          result.session.miid ||
+          result.data?.mI_ID ||
+          result.data?.MI_Idforlogin ||
+          0;
+        if (dynamicMiId) {
+          result.session.miid = Number(dynamicMiId);
+          sessionStorage.setItem("miid", String(dynamicMiId));
+        }
+
+        // Dynamically capture MI_Subdomain strictly from login API response or env into session
+        const dynamicMiSubdomain =
+          result.session.MI_Subdomain ||
+          result.data?.MI_Subdomain ||
+          result.data?.mI_Subdomain ||
+          CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN ||
+          "";
+        if (dynamicMiSubdomain) {
+          result.session.MI_Subdomain = dynamicMiSubdomain;
+          sessionStorage.setItem("MI_Subdomain", dynamicMiSubdomain);
+        }
+
+        // Dynamically capture backgroupdlo (background image) from login API response or env into session
+        const dynamicBackgroupdlo =
+          result.backgroupdlo ||
+          result.session.backgroupdlo ||
+          result.data?.backgroupdlo ||
+          CLIENT_API_ENDPOINTS.DEFAULT_BACKGROUPDLO ||
+          getBackgroundLo() ||
+          "";
+        if (dynamicBackgroupdlo) {
+          result.session.backgroupdlo = dynamicBackgroupdlo;
+          sessionStorage.setItem("backgroupdlo", dynamicBackgroupdlo);
+          localStorage.setItem("kiosk_backgroupdlo", dynamicBackgroupdlo);
+        }
+
         // Save user data to sessionStorage and individual keys (matching C# sessionInfo)
         saveUserSession(result.session, rememberMe);
         setAuthSuccess(true);
@@ -418,7 +551,7 @@ export default function LoginScreen({
 
   return (
     <div
-      className="kiosk-command-center"
+      className={`kiosk-command-center ${bgImage ? "has-bg-image" : ""}`}
       style={{
         position: "relative",
         width: "100%",
@@ -432,12 +565,27 @@ export default function LoginScreen({
         fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
         userSelect: "none",
         boxSizing: "border-box",
-        background: "#fffcf9",
+        background: bgImage ? "transparent" : "#fffcf9",
       }}
     >
-      {/* FLOATING AMBIENT ORBS (MATCHING ROLE SELECTION SCREEN) */}
-      <div className="kiosk-orb kiosk-orb-one" />
-      <div className="kiosk-orb kiosk-orb-two" />
+      {/* Dynamic Background Image strictly from env parameter 'backgroupdlo' (NO extra color) */}
+      {bgImage && (
+        <div
+          className="dashboard-bg-backdrop"
+          aria-hidden="true"
+          style={{
+            backgroundImage: `url("${bgImage}")`,
+          }}
+        />
+      )}
+
+      {/* FLOATING AMBIENT ORBS only if no background image */}
+      {!bgImage && (
+        <>
+          <div className="kiosk-orb kiosk-orb-one" />
+          <div className="kiosk-orb kiosk-orb-two" />
+        </>
+      )}
 
       {/* TOP COMMAND NAVBAR (ROLE SELECTION COMMAND THEME) */}
       <header
@@ -465,10 +613,18 @@ export default function LoginScreen({
             <ArrowLeft size={19} />
           </button>
           <div className="command-mark" aria-hidden="true" style={{ width: "42px", height: "42px" }} suppressHydrationWarning>
-            <img src="/mvps/brand/logo.png" alt="Madhuvan Vatika Public School Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            <img
+              src={schoolLogo}
+              alt={`${schoolName} Logo`}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/mvps/brand/logo.png";
+              }}
+            />
           </div>
           <div>
-            <p className="command-kicker" style={{ margin: "0 0 2px" }}>MADHUVAN VATIKA • SMART CAMPUS</p>
+            <p className="command-kicker" style={{ margin: "0 0 2px" }}>{schoolName.toUpperCase()} • SMART CAMPUS</p>
             <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
               <h1
                 style={{
@@ -481,7 +637,7 @@ export default function LoginScreen({
                   letterSpacing: "-0.025em",
                 }}
               >
-                Madhuvan Vatika - MVPS
+                {schoolName}
               </h1>
               <span
                 style={{
@@ -515,10 +671,10 @@ export default function LoginScreen({
 
           {/* Live Clock & Date Badge */}
           {currentTime && (
-            <div className="command-time">
+            <div className="command-time" suppressHydrationWarning>
               <Calendar size={15} />
-              <span>{formatDate(currentTime)}</span>
-              <b>{formatTime(currentTime)}</b>
+              <span suppressHydrationWarning>{formatDate(currentTime)}</span>
+              <b suppressHydrationWarning>{formatTime(currentTime)}</b>
             </div>
           )}
 
@@ -1192,7 +1348,7 @@ export default function LoginScreen({
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <label style={{ fontSize: "0.7rem", fontWeight: 700, color: "#374151" }}>MI_Id:</label>
                 <div style={{ display: "flex", gap: "5px", flexWrap: "wrap" }}>
-                  {["31", "4", "6", "22"].map((id) => (
+                  {Array.from(new Set([CLIENT_API_ENDPOINTS.DEFAULT_MI_ID, "6", "31", "4", "22"].filter(Boolean))).map((id) => (
                     <button
                       key={id}
                       type="button"
@@ -1208,7 +1364,7 @@ export default function LoginScreen({
                         cursor: "pointer",
                       }}
                     >
-                      {id === "31" ? "31 (MVPS)" : id === "4" ? "4 (Demo)" : id === "6" ? "6 (BBHS)" : `${id}`}
+                      {id === "31" ? "31 (MVPS)" : id === "4" ? "4 (Demo)" : id === "6" ? "6 (BBHS)" : id === CLIENT_API_ENDPOINTS.DEFAULT_MI_ID ? `${id} (Env)` : `${id}`}
                     </button>
                   ))}
                 </div>
@@ -1625,7 +1781,7 @@ export default function LoginScreen({
                   }}
                   style={{ color: config.accentColor, textDecoration: "none", fontWeight: 700 }}
                 >
-                  Forgot ID / Help?
+                  {/* Forgot ID / Help? */}
                 </a>
               </div>
 

@@ -1,7 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import StaffDashboard from "@/components/StaffDashboard";
+
+const StaffDashboard = dynamic(() => import("@/components/StaffDashboard"), {
+  ssr: false,
+});
 
 export default function StaffPage() {
   const router = useRouter();

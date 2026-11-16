@@ -16,7 +16,7 @@ async function handleBirthdays(params: { type?: string; MI_Id?: any; MO_Id?: any
   try {
     const { type = "both", MI_Id, MO_Id } = params;
 
-    const instId = Number(MI_Id || 31);
+    const instId = Number(MI_Id || VAPS_API_ENDPOINTS.DEFAULT_MI_ID);
     const moId = Number(MO_Id || 2);
 
     let students: any[] = [];
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const type = searchParams.get("type") || "both";
-  const MI_Id = searchParams.get("MI_Id") || searchParams.get("miId") || "31";
+  const MI_Id = searchParams.get("MI_Id") || searchParams.get("miId") || VAPS_API_ENDPOINTS.DEFAULT_MI_ID;
   const MO_Id = searchParams.get("MO_Id") || searchParams.get("moId") || "2";
   return handleBirthdays({ type, MI_Id, MO_Id });
 }

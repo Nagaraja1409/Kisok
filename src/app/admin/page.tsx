@@ -1,7 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import AdminDashboard from "@/components/AdminDashboard";
+
+const AdminDashboard = dynamic(() => import("@/components/AdminDashboard"), {
+  ssr: false,
+});
 
 export default function AdminPage() {
   const router = useRouter();

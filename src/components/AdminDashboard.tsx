@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import MarkdownResponse from "@/components/chat/MarkdownResponse";
-import { getUserSession, clearUserSession } from "@/lib/session";
+import { getUserSession, clearUserSession, getInstituteLogo, getInstituteName, getAiAssistantName, getBackgroundLo } from "@/lib/session";
 import { SessionInfo } from "@/types/auth";
 import {
   ArrowLeft,
@@ -97,7 +97,7 @@ const ADMIN_NOTICES = [
     time: "1h ago",
     date: "14 Oct 2026",
     authority: "Central Board of Secondary Education",
-    details: "Madhuvan Vatika - MVPS affiliation (Reg. 1930281) has been extended for another 5-year cycle with Grade A++ accreditation status. Full compliance documentation has been archived into the institutional audit locker.",
+    details: "Institutional board affiliation has been extended for another 5-year cycle with Grade A++ accreditation status. Full compliance documentation has been archived into the institutional audit locker.",
   },
   {
     id: 2,
@@ -169,6 +169,7 @@ const ADMISSIONS_PIPELINE = [
 
 export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
   const [session, setSession] = useState<SessionInfo | null>(null);
+  const [bgImage, setBgImage] = useState<string>(() => getBackgroundLo());
   const [currentScreen, setCurrentScreen] = useState<ActiveScreen>("dashboard");
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -182,7 +183,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
   const [chatMessages, setChatMessages] = useState<Array<{ sender: "bot" | "user"; text: string; time: string; tag?: string }>>([
     {
       sender: "bot",
-      text: "Greetings, Administrator. I am **MVP AI**, your Institutional Intelligence Assistant. I am connected to the campus smart grid, CBSE compliance ledger, fee reconciliation, and attendance telemetry. How may I assist your administration today?",
+      text: `Greetings, Administrator. I am **${getAiAssistantName()}**, your Institutional Intelligence Assistant. I am connected to the campus smart grid, CBSE compliance ledger, fee reconciliation, and attendance telemetry. How may I assist your administration today?`,
       time: "Just now",
       tag: "ADMIN EXECUTIVE DESK",
     },
@@ -225,7 +226,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
       const data = await res.json();
       const botResponse =
         data.answer ||
-        `✨ Understood, Administrator. MVP AI has logged your request: "${query}". All institutional databases are synchronized.`;
+        `✨ Understood, Administrator. ${getAiAssistantName()} has logged your request: "${query}". All institutional databases are synchronized.`;
 
       setChatMessages((prev) => [
         ...prev,
@@ -276,9 +277,26 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
 
   // Load session
   useEffect(() => {
+    // 1. Fetch dynamic branding and background image strictly from environment (/api/branding)
+    fetch("/api/branding", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.backgroupdlo) {
+          setBgImage(data.backgroupdlo);
+          try {
+            sessionStorage.setItem("backgroupdlo", data.backgroupdlo);
+            localStorage.setItem("kiosk_backgroupdlo", data.backgroupdlo);
+          } catch { }
+        }
+      })
+      .catch(() => { });
+
     const activeSession = getUserSession();
     if (activeSession) {
       setSession(activeSession);
+      if (activeSession.backgroupdlo) {
+        setBgImage(activeSession.backgroupdlo);
+      }
     }
   }, []);
 
@@ -299,27 +317,56 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
     onBackToKiosk();
   };
 
-  const adminName = session?.username || "Dr. R. K. Verma";
-  const schoolName = session?.initname || "Madhuvan Vatika - MVPS";
+  const adminName = session?.username || "";
+  const schoolName = session?.initname || getInstituteName();
+  const schoolLogo = session?.initlogo || getInstituteLogo();
+  const aiName = getAiAssistantName();
   const adminRole = session?.Rolename || "Campus Administrator";
   const academicYear = session?.ASMAY_Year || "2025-2026";
 
   return (
-    <div className="dashboard-page">
-      {/* FLOATING AMBIENT ORBS (MATCHING ROLE SELECTION SCREEN) */}
-      <div className="kiosk-orb kiosk-orb-one" />
-      <div className="kiosk-orb kiosk-orb-two" />
+    <div className={`dashboard-page ${bgImage ? "has-bg-image" : ""}`}>
+      {/* FLOATING AMBIENT ORBS only if no background image */}
+      {!bgImage && (
+        <>
+          <div className="kiosk-orb kiosk-orb-one" />
+          <div className="kiosk-orb kiosk-orb-two" />
+        </>
+      )}
 
-      {/* TOP COMMAND NAVBAR (ROLE SELECTION COMMAND THEME) */}
-      <header className="dash-navbar">
-        <div className="command-brand" onClick={handleLogout} style={{ cursor: "pointer" }}>
-          <div className="command-mark" aria-hidden="true" suppressHydrationWarning>
-            <img src="/mvps/brand/logo.png" alt="Madhuvan Vatika Public School Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+      {/* Dynamic Background Image strictly from env parameter 'backgroupdlo' (NO extra color) */}
+      {bgImage && (
+        <div
+          className="dashboard-bg-backdrop"
+          aria-hidden="true"
+          style={{
+            backgroundImage: `url("${bgImage}")`,
+          }}
+        />
+      )}
+
+      {/* TOP COMMAND NAVBAR (ROLE SELECTION COMMAND THEME - FULLY DYNAMIC) */}
+      <header className="dash-navbar" style={{ position: "relative", zIndex: 30 }} suppressHydrationWarning>
+        <div className="command-brand" style={{ display: "flex", alignItems: "center", gap: "14px" }} suppressHydrationWarning>
+          <button className="command-back" onClick={handleLogout} aria-label="Back to role selection" title="Back to Kiosk Home">
+            <ArrowLeft size={19} />
+          </button>
+          <div className="command-mark" aria-hidden="true" style={{ width: "42px", height: "42px" }} suppressHydrationWarning>
+            <img
+              src={schoolLogo}
+              alt={`${schoolName} Logo`}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/mvps/brand/logo.png";
+              }}
+              suppressHydrationWarning
+            />
           </div>
-          <div>
-            <p className="command-kicker">MADHUVAN VATIKA • SMART CAMPUS</p>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
-              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "#1e293b" }}>
+          <div suppressHydrationWarning>
+            <p className="command-kicker" suppressHydrationWarning>{schoolName.toUpperCase()} • SMART CAMPUS</p>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }} suppressHydrationWarning>
+              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "#1e293b" }} suppressHydrationWarning>
                 {schoolName}
               </h1>
               <span
@@ -368,11 +415,11 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
           </div>
 
           {/* Command Time Pill */}
-          <div className="dash-clock-widget">
+          <div className="dash-clock-widget" suppressHydrationWarning>
             <Calendar size={13} style={{ color: "#7c3aed" }} />
-            <span>
+            <span suppressHydrationWarning>
               {currentTime.toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short" })} •{" "}
-              <b>{currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}</b>
+              <b suppressHydrationWarning>{currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}</b>
             </span>
           </div>
 
@@ -473,14 +520,14 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                 title="Launch Admin AI Command Space"
               >
                 <div className="hero-ai-robo-wrap">
-                  <img src="/ai_robot.png" alt="MVP AI" className="hero-ai-robo-img" />
+                  <img src="/ai_robot.png" alt={aiName} className="hero-ai-robo-img" />
                   <span className="hero-ai-pulse-dot" />
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="hero-ai-kicker">
                     <Sparkles size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> EXECUTIVE AI
                   </div>
-                  <span className="hero-ai-action">Ask MVP AI →</span>
+                  <span className="hero-ai-action">Ask {aiName} →</span>
                 </div>
               </button>
             </div>
@@ -1295,7 +1342,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
               </div>
               <div>
                 <h2>Institutional Fee Ledger & Accounts Reconciliation</h2>
-                <p>Term-2 Tuition & Transportation Fee Ledger • Madhuvan Vatika - MVPS</p>
+                <p>Term-2 Tuition & Transportation Fee Ledger • {schoolName}</p>
               </div>
             </div>
 
@@ -1602,7 +1649,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                   </span>
                 </div>
                 <div style={{ fontSize: "0.85rem", color: "#64748b", marginBottom: "0.75rem" }}>
-                  Directorate of Institutional Governance • Madhuvan Vatika - MVPS
+                  Directorate of Institutional Governance • {schoolName}
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
@@ -1672,7 +1719,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                 <Bot size={20} />
               </div>
               <div>
-                <h2>MVP AI Executive Assistant</h2>
+                <h2>{aiName} Executive Assistant</h2>
                 <p>Institutional Operations Copilot • Governance & Smart Campus Telemetry</p>
               </div>
             </div>
@@ -1707,12 +1754,12 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                   <div className="ai-robot-showcase-frame" style={{ borderColor: "#7c3aed", boxShadow: "0 8px 24px rgba(124, 58, 237, 0.2)" }}>
                     <img
                       src="/ai_robot.png"
-                      alt="MVP AI Robot"
+                      alt={`${aiName} Robot`}
                       className="ai-robot-showcase-img"
                     />
                   </div>
                   <div className="ai-robot-badge" style={{ background: "#7c3aed" }}>
-                    <Bot size={13} /> MVP AI • ADMIN DESK
+                    <Bot size={13} /> {aiName} • ADMIN DESK
                   </div>
                 </div>
 
@@ -1782,7 +1829,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                       onClick={() => setChatMessages([
                         {
                           sender: "bot",
-                          text: "Conversation refreshed. MVP AI executive ledger is ready. How can I assist you?",
+                          text: `Conversation refreshed. ${aiName} executive ledger is ready. How can I assist you?`,
                           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
                           tag: "ADMIN EXECUTIVE DESK",
                         }
@@ -1811,14 +1858,14 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                       className={`ai-msg-row ${msg.sender === "bot" ? "ai-msg-row-bot" : "ai-msg-row-user"}`}
                     >
                       {msg.sender === "bot" ? (
-                        <img src="/ai_robot.png" alt="MVP AI" className="ai-msg-avatar" style={{ border: "2px solid #7c3aed" }} />
+                        <img src="/ai_robot.png" alt={aiName} className="ai-msg-avatar" style={{ border: "2px solid #7c3aed" }} />
                       ) : (
                         <img src={session?.img || "/admin_avatar.png"} alt={adminName} className="ai-msg-avatar" style={{ border: "2px solid #ea580c" }} />
                       )}
 
                       <div className="ai-msg-content-wrap">
                         <div className="ai-msg-sender-meta">
-                          <span>{msg.sender === "bot" ? "MVP AI Executive" : adminName}</span>
+                          <span>{msg.sender === "bot" ? `${aiName} Executive` : adminName}</span>
                           {msg.sender === "bot" && (
                             <span
                               style={{
@@ -1846,7 +1893,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                   {/* Typing Indicator */}
                   {isTyping && (
                     <div className="ai-msg-row ai-msg-row-bot">
-                      <img src="/ai_robot.png" alt="MVP AI" className="ai-msg-avatar" style={{ border: "2px solid #7c3aed" }} />
+                      <img src="/ai_robot.png" alt={aiName} className="ai-msg-avatar" style={{ border: "2px solid #7c3aed" }} />
                       <div className="ai-typing-indicator">
                         <span className="ai-typing-dot" />
                         <span className="ai-typing-dot" />
@@ -1885,7 +1932,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                   <input
                     type="text"
                     className="ai-chat-text-input"
-                    placeholder="Ask MVP AI about attendance, admissions, finances, solar grid, compliance..."
+                    placeholder={`Ask ${aiName} about attendance, admissions, finances, solar grid, compliance...`}
                     value={chatInputText}
                     disabled={isTyping}
                     onChange={(e) => setChatInputText(e.target.value)}
@@ -1899,7 +1946,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                     className="ai-chat-send-btn"
                     onClick={() => handleSendChatMessage()}
                     disabled={isTyping}
-                    title="Send instruction to MVP AI"
+                    title={`Send instruction to ${aiName}`}
                     style={{ background: isTyping ? "#94a3b8" : "#7c3aed", cursor: isTyping ? "not-allowed" : "pointer" }}
                   >
                     <Send size={15} />
@@ -1967,7 +2014,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <Play size={16} fill="#7c3aed" color="#7c3aed" />
                 <span style={{ color: "#ffffff", fontWeight: 700, fontSize: "0.85rem" }}>
-                  Madhuvan Vatika Campus Aerial Architecture & Infrastructure
+                  {schoolName} Campus Aerial Architecture & Infrastructure
                 </span>
               </div>
               <button
@@ -1992,7 +2039,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
             <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, background: "#000000" }}>
               <iframe
                 src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1"
-                title="Madhuvan Vatika Infrastructure Tour"
+                title={`${schoolName} Infrastructure Tour`}
                 style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen

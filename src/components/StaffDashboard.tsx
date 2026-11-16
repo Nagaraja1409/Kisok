@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import MarkdownResponse from "@/components/chat/MarkdownResponse";
-import { getUserSession, clearUserSession } from "@/lib/session";
+import { getUserSession, clearUserSession, getInstituteLogo, getInstituteName, getAiAssistantName, getBackgroundLo } from "@/lib/session";
 import { SessionInfo } from "@/types/auth";
 import { CLIENT_API_ENDPOINTS } from "@/config/api";
 import {
@@ -68,6 +68,7 @@ export type ActiveScreen =
 
 export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
   const [session, setSession] = useState<SessionInfo | null>(null);
+  const [bgImage, setBgImage] = useState<string>(() => getBackgroundLo());
   const [currentScreen, setCurrentScreen] = useState<ActiveScreen>("dashboard");
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -155,9 +156,26 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
 
   // Load active session and fetch live API data
   useEffect(() => {
+    // 1. Fetch dynamic branding and background image strictly from environment (/api/branding)
+    fetch("/api/branding", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.backgroupdlo) {
+          setBgImage(data.backgroupdlo);
+          try {
+            sessionStorage.setItem("backgroupdlo", data.backgroupdlo);
+            localStorage.setItem("kiosk_backgroupdlo", data.backgroupdlo);
+          } catch { }
+        }
+      })
+      .catch(() => { });
+
     const activeSession = getUserSession();
     if (activeSession) {
       setSession(activeSession);
+      if (activeSession.backgroupdlo) {
+        setBgImage(activeSession.backgroupdlo);
+      }
       fetchStaffDetails(activeSession);
       fetchStaffTimetable(activeSession);
       fetchStaffLeave(activeSession);
@@ -186,7 +204,8 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           userid: s.UserId || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
           name: s.name,
           userName: s.username,
           empCode: s.Empid ? `EMP-${s.Empid}` : undefined,
@@ -226,7 +245,8 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           userid: s.UserId || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
         }),
       });
       if (res.ok) {
@@ -248,7 +268,8 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           emp_id: s.Empid || s.UserId || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
         }),
       });
       if (res.ok) {
@@ -270,7 +291,8 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userid: s.UserId || s.Empid || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
         }),
       });
       if (res.ok) {
@@ -297,7 +319,8 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
           asmay_id: s.ASMAY_Id || 0,
           userid: s.UserId || s.Empid || 0,
           year: s.ASMAY_Year || "",
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
         }),
       });
       if (res.ok) {
@@ -323,7 +346,8 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           month: 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
         }),
       });
       if (res.ok) {
@@ -348,7 +372,7 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
           amst_id: 0,
           flag: "O",
         }),
@@ -423,7 +447,9 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
     session?.name ||
     session?.username ||
     "Faculty Member";
-  const schoolName = session?.initname || "Campus Portal";
+  const schoolName = session?.initname || getInstituteName();
+  const schoolLogo = session?.initlogo || getInstituteLogo();
+  const aiName = getAiAssistantName();
   const staffRole = session?.Rolename || "Faculty";
   const staffDept = staffProfile.department || (session?.Rolename ? `${session.Rolename} Department` : "Academic Department");
   const empId = staffProfile.empCode || (session?.Empid ? `EMP-${session.Empid}` : (session?.UserId ? `ID: ${session.UserId}` : ""));
@@ -511,7 +537,7 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
     {
       id: "msg-welcome-staff",
       sender: "bot",
-      text: "Welcome to **MVP AI Faculty Assistant**! 👋 I can help summarize your class schedule, check leave balances, attendance logs, or payslip records. How may I assist you today?",
+      text: `Welcome to **${getAiAssistantName()} Faculty Assistant**! 👋 I can help summarize your class schedule, check leave balances, attendance logs, or payslip records. How may I assist you today?`,
       time: "Just now",
       suggestions: [
         "What are my classes today?",
@@ -603,23 +629,50 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
   };
 
   return (
-    <div className="dashboard-page">
-      {/* Ambient Orbs */}
-      <div className="kiosk-orb kiosk-orb-one" />
-      <div className="kiosk-orb kiosk-orb-two" />
+    <div className={`dashboard-page ${bgImage ? "has-bg-image" : ""}`}>
+      {/* Ambient Orbs only if no background image */}
+      {!bgImage && (
+        <>
+          <div className="kiosk-orb kiosk-orb-one" />
+          <div className="kiosk-orb kiosk-orb-two" />
+        </>
+      )}
 
-      {/* TOP COMMAND NAVBAR */}
-      <header className="dash-navbar">
-        <div className="command-brand" onClick={handleLogout} style={{ cursor: "pointer" }}>
-          <div className="command-mark" aria-hidden="true" suppressHydrationWarning>
-            <img src="/mvps/brand/logo.png" alt="Madhuvan Vatika Public School Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+      {/* Dynamic Background Image strictly from env parameter 'backgroupdlo' (NO extra color) */}
+      {bgImage && (
+        <div
+          className="dashboard-bg-backdrop"
+          aria-hidden="true"
+          style={{
+            backgroundImage: `url("${bgImage}")`,
+          }}
+        />
+      )}
+
+      {/* TOP COMMAND NAVBAR (ROLE SELECTION COMMAND THEME - FULLY DYNAMIC) */}
+      <header className="dash-navbar" style={{ position: "relative", zIndex: 30 }} suppressHydrationWarning>
+        <div className="command-brand" style={{ display: "flex", alignItems: "center", gap: "14px" }} suppressHydrationWarning>
+          <button className="command-back" onClick={handleLogout} aria-label="Back to role selection" title="Back to Kiosk Home">
+            <ArrowLeft size={19} />
+          </button>
+          <div className="command-mark" aria-hidden="true" style={{ width: "42px", height: "42px" }} suppressHydrationWarning>
+            <img
+              src={schoolLogo}
+              alt={`${schoolName} Logo`}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/mvps/brand/logo.png";
+              }}
+              suppressHydrationWarning
+            />
           </div>
-          <div>
-            <p className="command-kicker">
-              {session?.initname ? `${session.initname.toUpperCase()} • SMART CAMPUS` : "CAMPUS PORTAL"}
+          <div suppressHydrationWarning>
+            <p className="command-kicker" style={{ margin: "0 0 2px" }} suppressHydrationWarning>
+              {session?.initname ? `${session.initname.toUpperCase()} • SMART CAMPUS` : `${schoolName.toUpperCase()} • SMART CAMPUS`}
             </p>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }}>
-              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "#1e293b", whiteSpace: "nowrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }} suppressHydrationWarning>
+              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.25rem", fontWeight: 800, color: "#1e293b", whiteSpace: "nowrap" }} suppressHydrationWarning>
                 {schoolName}
               </h1>
               <span
@@ -633,7 +686,7 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
                   fontWeight: 800,
                   padding: "0.22rem 0.75rem",
                   borderRadius: "9999px",
-                  border: "1.5px solid rgba(251, 146, 60, 0.4)",
+                  border: "1.5px solid rgba(234, 88, 12, 0.35)",
                   boxShadow: "0 2px 8px rgba(234, 88, 12, 0.08)",
                   letterSpacing: "0.02em",
                   whiteSpace: "nowrap",
@@ -648,7 +701,74 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
         </div>
 
         {/* Profile Pill & Control Actions */}
-        <div className="dash-nav-actions" style={{ flexWrap: "nowrap" }}>
+        <div className="dash-nav-actions" style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "nowrap" }}>
+          {/* Live Campus Telemetry Pill */}
+          <div className="command-live-status">
+            <span style={{ background: "#16a34a" }} />
+            <span>Campus online</span>
+          </div>
+
+          {/* Live Command Time Pill */}
+          <div
+            className="command-time"
+            suppressHydrationWarning
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.45rem",
+              padding: "0 0.85rem",
+              minHeight: "34px",
+              height: "34px",
+              background: "rgba(255, 255, 255, 0.92)",
+              border: "1px solid rgba(254, 215, 170, 0.7)",
+              borderRadius: "9999px",
+              fontSize: "0.74rem",
+              fontWeight: 700,
+              color: "#334155",
+              boxShadow: "0 2px 8px rgba(234, 88, 12, 0.05)",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+            }}
+          >
+            <Calendar size={14} style={{ color: "#ea580c" }} />
+            <span suppressHydrationWarning>
+              {currentTime.toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
+            </span>
+            <b style={{ color: "#ea580c" }} suppressHydrationWarning>
+              {currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}
+            </b>
+          </div>
+
+          {/* Role Status Tag (Matching Login Header) */}
+          <div
+            className="login-role-status-badge"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "5px 12px",
+              borderRadius: "9999px",
+              border: "1.5px solid rgba(13, 148, 136, 0.4)",
+              background: "rgba(13, 148, 136, 0.1)",
+              color: "#0f766e",
+              fontSize: "0.76rem",
+              fontWeight: 800,
+              letterSpacing: "0.02em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span
+              className="login-status-dot"
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                background: "#0d9488",
+              }}
+            />
+            <span>Faculty &amp; Academic Staff</span>
+          </div>
+
           {/* Staff Profile Pill */}
           <div
             className="dash-profile-pill"
@@ -666,21 +786,6 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
               <span className="dash-user-name">{staffName}</span>
               <span className="dash-user-role">{staffRole} • ID: {empId}</span>
             </div>
-          </div>
-
-          {/* Live Campus Telemetry Pill */}
-          <div className="command-live-status">
-            <span style={{ background: "#16a34a" }} />
-            <span>Campus online</span>
-          </div>
-
-          {/* Command Time Pill */}
-          <div className="dash-clock-widget">
-            <Calendar size={13} style={{ color: "#ea580c" }} />
-            <span>
-              {currentTime.toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short" })} •{" "}
-              <b>{currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}</b>
-            </span>
           </div>
 
           {/* Fullscreen Button */}
@@ -748,7 +853,7 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
             { id: "notices" as ActiveScreen, name: "Staff Circulars", icon: Megaphone },
             { id: "evaluation" as ActiveScreen, name: "Student Evaluation", icon: BarChart3 },
             { id: "profile" as ActiveScreen, name: "Faculty Profile", icon: User },
-            { id: "aispace" as ActiveScreen, name: "MVP AI", icon: Sparkles },
+            { id: "aispace" as ActiveScreen, name: aiName, icon: Sparkles },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = currentScreen === tab.id;
@@ -907,7 +1012,7 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
                   <div className="hero-ai-kicker">
                     <Sparkles size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> AI SPACE
                   </div>
-                  <span className="hero-ai-action">Ask MVP AI →</span>
+                  <span className="hero-ai-action">Ask {aiName} →</span>
                 </div>
               </button>
             </div>
@@ -1621,7 +1726,7 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
                   boxShadow: "0 2px 6px rgba(234, 88, 12, 0.25)",
                 }}
               >
-                <Sparkles size={13} /> Ask MVP AI →
+                <Sparkles size={13} /> Ask {aiName} →
               </button>
             </div>
           </section>
@@ -2368,14 +2473,14 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
                   <Sparkles size={20} />
                 </div>
                 <div>
-                  <h2>Faculty MVP AI Teaching Assistant</h2>
+                  <h2>Faculty {aiName} Teaching Assistant</h2>
                   <p>Instant answers on Timetable, Leaves, Biometrics &amp; CBSE Guidelines</p>
                 </div>
               </div>
 
               <div className="student-screen-nav-tools">
                 <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#7c3aed" }}>
-                  ● MVP AI Engine Online
+                  ● {aiName} Engine Online
                 </div>
               </div>
             </div>
@@ -2428,7 +2533,7 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
                 ))}
                 {isTyping && (
                   <div style={{ alignSelf: "flex-start", background: "#ffffff", padding: "0.6rem 1rem", borderRadius: "18px", border: "1.5px solid #fed7aa", fontSize: "0.8rem", color: "#ea580c", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
-                    <RefreshCw size={13} className="animate-spin" /> MVP AI is typing an answer...
+                    <RefreshCw size={13} className="animate-spin" /> {aiName} is typing an answer...
                   </div>
                 )}
                 <div ref={chatMessagesEndRef} />
@@ -2438,7 +2543,7 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
               <div style={{ padding: "0.85rem", background: "#ffffff", borderTop: "1px solid #e2e8f0", display: "flex", gap: "0.75rem" }}>
                 <input
                   type="text"
-                  placeholder="Ask MVP AI about classes, leaves, salary or lesson plans..."
+                  placeholder={`Ask ${aiName} about classes, leaves, salary or lesson plans...`}
                   value={chatInputText}
                   disabled={isTyping}
                   onChange={(e) => setChatInputText(e.target.value)}

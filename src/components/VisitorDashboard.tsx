@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import MarkdownResponse from "@/components/chat/MarkdownResponse";
+import { getInstituteLogo, getInstituteName, getAiAssistantName, getUserSession, getBackgroundLo } from "@/lib/session";
 import {
   ArrowLeft,
   ArrowRight,
@@ -244,8 +245,8 @@ const CBS_FAQS = [
     a: "Annual fees range from ₹48,000 (Pre-KG) to ₹84,000 (Senior Secondary STEM), payable in 3 term installments. Transport and canteen are optional and route-based.",
   },
   {
-    q: "Is Madhuvan Vatika - MVPS affiliated to CBSE?",
-    a: "Yes! Madhuvan Vatika - MVPS is permanently affiliated to CBSE New Delhi (Affiliation No. 1930421 • School Code: 45210), maintaining NAAC Grade A++ benchmarking.",
+    q: "Is the school officially affiliated and accredited?",
+    a: "Yes! Our institution is officially affiliated and accredited, maintaining NAAC Grade A++ benchmarking.",
   },
   {
     q: "Can I meet the Principal or Admission Director today?",
@@ -253,11 +254,11 @@ const CBS_FAQS = [
   },
   {
     q: "What safety protocols and transport routes are available?",
-    a: "Our campus operates 32 GPS-tracked school buses with speed governors, CCTV cameras, female attendants, and real-time parent app telemetry covering 34 routes.",
+    a: "Our campus operates GPS-tracked school buses with speed governors, CCTV cameras, female attendants, and real-time parent app telemetry.",
   },
   {
     q: "Are there concessions or scholarship tests for merit students?",
-    a: "Yes. The Madhuvan Vatika Merit Scholarship offers up to 50% tuition waiver for students scoring 90%+ in the annual scholarship assessment or state-level sports achievers.",
+    a: "Yes. Our Merit Scholarship offers up to 50% tuition waiver for students scoring 90%+ in the annual scholarship assessment or state-level sports achievers.",
   },
 ];
 
@@ -268,6 +269,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
   const [currentScreen, setCurrentScreen] = useState<VisitorScreen>("dashboard");
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [bgImage, setBgImage] = useState<string>(() => getBackgroundLo());
 
   // Visitor Session from localStorage
   const [visitorSession, setVisitorSession] = useState<VisitorSession>({
@@ -284,11 +286,11 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
   const [hostAlertSent, setHostAlertSent] = useState(false);
   const [hostAlertTimer, setHostAlertTimer] = useState<string | null>(null);
 
-  // Ask MVP AI chatbot
+  // Ask Campus AI chatbot
   const [chatMessages, setChatMessages] = useState<Array<{ sender: "user" | "bot"; text: string }>>([
     {
       sender: "bot",
-      text: "Namaste! Welcome to Madhuvan Vatika - MVPS. I am **MVP AI**, your AI Campus Guide. Feel free to ask about admissions, fee structure, campus buildings, or timings!",
+      text: `Namaste! Welcome to ${getInstituteName()}. I am **${getAiAssistantName()}**, your AI Campus Guide. Feel free to ask about admissions, fee structure, campus buildings, or timings!`,
     },
   ]);
   const [chatInput, setChatInput] = useState("");
@@ -296,7 +298,25 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
 
   // Load localStorage data safely
   useEffect(() => {
+    // 1. Fetch dynamic branding and background image strictly from environment (/api/branding)
+    fetch("/api/branding", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.backgroupdlo) {
+          setBgImage(data.backgroupdlo);
+          try {
+            sessionStorage.setItem("backgroupdlo", data.backgroupdlo);
+            localStorage.setItem("kiosk_backgroupdlo", data.backgroupdlo);
+          } catch { }
+        }
+      })
+      .catch(() => { });
+
     try {
+      const s = getUserSession();
+      if (s?.backgroupdlo) {
+        setBgImage(s.backgroupdlo);
+      }
       const stored = localStorage.getItem("gvps_visitor_session");
       if (stored) {
         const parsed = JSON.parse(stored) as VisitorSession;
@@ -304,7 +324,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
           setVisitorSession(parsed);
         }
       }
-    } catch {}
+    } catch { }
   }, []);
 
   // Clock & Fullscreen synchronizer
@@ -320,7 +340,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
+      document.documentElement.requestFullscreen().catch(() => { });
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen();
@@ -383,23 +403,54 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
   /* ─────────────────────────────────────────────────────────────
      RENDER
   ───────────────────────────────────────────────────────────── */
+  const schoolLogo = getInstituteLogo();
+  const schoolName = getInstituteName();
+  const aiName = getAiAssistantName();
+
   return (
-    <div className="dashboard-page">
-      {/* Ambient background orbs matching Student/Staff software theme */}
-      <div className="kiosk-orb kiosk-orb-one" />
-      <div className="kiosk-orb kiosk-orb-two" />
+    <div className={`dashboard-page ${bgImage ? "has-bg-image" : ""}`}>
+      {/* Ambient background orbs only if no background image */}
+      {!bgImage && (
+        <>
+          <div className="kiosk-orb kiosk-orb-one" />
+          <div className="kiosk-orb kiosk-orb-two" />
+        </>
+      )}
+
+      {/* Dynamic Background Image strictly from env parameter 'backgroupdlo' (NO extra color) */}
+      {bgImage && (
+        <div
+          className="dashboard-bg-backdrop"
+          aria-hidden="true"
+          style={{
+            backgroundImage: `url("${bgImage}")`,
+          }}
+        />
+      )}
 
       {/* TOP COMMAND NAVBAR (Identical layout & alignment to Student/Staff) */}
-      <header className="dash-navbar">
-        <div className="command-brand" onClick={onBackToKiosk} style={{ cursor: "pointer" }}>
-          <div className="command-mark" aria-hidden="true" suppressHydrationWarning>
-            <img src="/mvps/brand/logo.png" alt="Madhuvan Vatika Public School Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+      <header className="dash-navbar" style={{ position: "relative", zIndex: 30 }} suppressHydrationWarning>
+        <div className="command-brand" style={{ display: "flex", alignItems: "center", gap: "14px" }} suppressHydrationWarning>
+          <button className="command-back" onClick={onBackToKiosk} aria-label="Back to role selection" title="Back to Kiosk Home">
+            <ArrowLeft size={19} />
+          </button>
+          <div className="command-mark" aria-hidden="true" style={{ width: "42px", height: "42px" }} suppressHydrationWarning>
+            <img
+              src={schoolLogo}
+              alt={`${schoolName} Logo`}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/mvps/brand/logo.png";
+              }}
+              suppressHydrationWarning
+            />
           </div>
-          <div>
-            <p className="command-kicker">MADHUVAN VATIKA • SMART CAMPUS</p>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }}>
-              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "#1e293b", whiteSpace: "nowrap" }}>
-                Madhuvan Vatika - MVPS
+          <div suppressHydrationWarning>
+            <p className="command-kicker" suppressHydrationWarning>{schoolName.toUpperCase()} • SMART CAMPUS</p>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }} suppressHydrationWarning>
+              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "#1e293b", whiteSpace: "nowrap" }} suppressHydrationWarning>
+                {schoolName}
               </h1>
               <span
                 style={{
@@ -449,11 +500,11 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
           </div>
 
           {/* Clock Widget */}
-          <div className="dash-clock-widget">
+          <div className="dash-clock-widget" suppressHydrationWarning>
             <Calendar size={13} style={{ color: "#ea580c" }} />
-            <span>
+            <span suppressHydrationWarning>
               {currentTime.toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short" })} •{" "}
-              <b>{currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}</b>
+              <b suppressHydrationWarning>{currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}</b>
             </span>
           </div>
 
@@ -479,7 +530,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
         <div className="ticker-content">
           <div className="ticker-item">
             <span className="ticker-tag">CAMPUS VISITOR NOTICE:</span>
-            <span>Welcome to Madhuvan Vatika - MVPS! Please keep your digital badge visible on campus premises.</span>
+            <span>Welcome to {schoolName}! Please keep your digital badge visible on campus premises.</span>
           </div>
           <div className="ticker-item">
             <span className="ticker-tag" style={{ color: "#ea580c" }}>ADMISSIONS 2026-27:</span>
@@ -578,14 +629,14 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
                 title="Launch Visitor AI Assistant"
               >
                 <div className="hero-ai-robo-wrap">
-                  <img src="/ai_robot.png" alt="MVP AI" className="hero-ai-robo-img" />
+                  <img src="/ai_robot.png" alt={aiName} className="hero-ai-robo-img" />
                   <span className="hero-ai-pulse-dot" />
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="hero-ai-kicker">
                     <Sparkles size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> AI HELPDESK
                   </div>
-                  <span className="hero-ai-action">Ask MVP AI →</span>
+                  <span className="hero-ai-action">Ask {aiName} →</span>
                 </div>
               </button>
             </div>
@@ -939,7 +990,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
                   ))}
                 </div>
                 <div style={{ background: "#f8fafc", padding: "0.4rem 0.65rem", borderRadius: "10px", border: "1px solid #e2e8f0", fontSize: "0.75rem", color: "#64748b" }}>
-                  💬 Ask anything about Madhuvan Vatika - MVPS for instant automated helpdesk guidance.
+                  💬 Ask anything about {schoolName} for instant automated helpdesk guidance.
                 </div>
               </div>
 
@@ -1096,7 +1147,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
               </div>
               <div>
                 <h2>Campus Map &amp; Interactive Wayfinder</h2>
-                <p>40-Acre Campus Building Navigator &amp; Floor Guide • Madhuvan Vatika - MVPS</p>
+                <p>Campus Building Navigator &amp; Floor Guide • {schoolName}</p>
               </div>
             </div>
 
@@ -1256,7 +1307,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
                 })()}
 
                 <div style={{ background: "#f0fdf4", border: "1.2px solid rgba(187, 247, 208, 0.8)", borderRadius: "14px", padding: "0.85rem", fontSize: "0.76rem", color: "#15803d", lineHeight: 1.4 }}>
-                  <strong>Visitor Wayfinding Tip:</strong> Madhuvan Vatika campus follows color-coded path markings. Orange trails lead to Admissions &amp; Admin; Teal trails lead to STEM labs.
+                  <strong>Visitor Wayfinding Tip:</strong> {schoolName} campus follows color-coded path markings. Orange trails lead to Admissions &amp; Admin; Teal trails lead to STEM labs.
                 </div>
               </div>
             </div>
@@ -1423,7 +1474,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
               >
                 <div style={{ background: "linear-gradient(135deg, #ea580c 0%, #c2410c 100%)", color: "#ffffff", padding: "1.25rem", textAlign: "center" }}>
                   <div style={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", opacity: 0.9 }}>
-                    MADHUVAN VATIKA - MVPS • VISITOR BADGE
+                    {schoolName.toUpperCase()} • VISITOR BADGE
                   </div>
                   <div style={{ fontFamily: "Outfit, sans-serif", fontSize: "1.3rem", fontWeight: 900, marginTop: "2px" }}>
                     OFFICIAL GUEST PASS
@@ -1775,9 +1826,9 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
             {/* Right: Interactive Chat Console */}
             <div style={{ background: "#ffffff", borderRadius: "18px", border: "1.5px solid rgba(254, 215, 170, 0.7)", boxShadow: "0 4px 18px rgba(0,0,0,0.03)", display: "flex", flexDirection: "column", height: "520px", overflow: "hidden" }}>
               <div style={{ padding: "0.85rem 1.25rem", background: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)", borderBottom: "1px solid rgba(254, 215, 170, 0.8)", display: "flex", alignItems: "center", gap: "0.65rem" }}>
-                <img src="/ai_robot.png" alt="MVP AI" style={{ width: 34, height: 34, objectFit: "contain" }} />
+                <img src="/ai_robot.png" alt={aiName} style={{ width: 34, height: 34, objectFit: "contain" }} />
                 <div>
-                  <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1e293b" }}>MVP AI Campus Assistant</div>
+                  <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1e293b" }}>{aiName} Campus Assistant</div>
                   <div style={{ fontSize: "0.68rem", color: "#16a34a", fontWeight: 700 }}>● Online • Ready to answer</div>
                 </div>
               </div>
@@ -1804,7 +1855,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
                 ))}
                 {isChatTyping && (
                   <div style={{ alignSelf: "flex-start", color: "#ea580c", fontSize: "0.75rem", fontWeight: 600, padding: "0.25rem 0.5rem", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <RefreshCw size={12} className="animate-spin" /> MVP AI is thinking and typing an answer...
+                    <RefreshCw size={12} className="animate-spin" /> {aiName} is thinking and typing an answer...
                   </div>
                 )}
               </div>
@@ -1813,7 +1864,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
               <div style={{ padding: "0.75rem 1rem", borderTop: "1px solid #e2e8f0", background: "#ffffff", display: "flex", gap: "0.5rem" }}>
                 <input
                   type="text"
-                  placeholder="Ask MVP AI about admissions, fees, timings, or directions..."
+                  placeholder={`Ask ${aiName} about admissions, fees, timings, or directions...`}
                   value={chatInput}
                   disabled={isChatTyping}
                   onChange={(e) => setChatInput(e.target.value)}
