@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import MarkdownResponse from "@/components/chat/MarkdownResponse";
-import { getUserSession, clearUserSession, getInstituteLogo, getInstituteName, getAiAssistantName } from "@/lib/session";
+import { getUserSession, clearUserSession, getInstituteLogo, getInstituteName, getAiAssistantName, getBackgroundLo } from "@/lib/session";
 import { SessionInfo } from "@/types/auth";
 import { CLIENT_API_ENDPOINTS } from "@/config/api";
 import {
@@ -68,6 +68,7 @@ export type ActiveScreen =
 
 export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
   const [session, setSession] = useState<SessionInfo | null>(null);
+  const [bgImage, setBgImage] = useState<string>(() => getBackgroundLo());
   const [currentScreen, setCurrentScreen] = useState<ActiveScreen>("dashboard");
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -155,9 +156,26 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
 
   // Load active session and fetch live API data
   useEffect(() => {
+    // 1. Fetch dynamic branding and background image strictly from environment (/api/branding)
+    fetch("/api/branding", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.backgroupdlo) {
+          setBgImage(data.backgroupdlo);
+          try {
+            sessionStorage.setItem("backgroupdlo", data.backgroupdlo);
+            localStorage.setItem("kiosk_backgroupdlo", data.backgroupdlo);
+          } catch { }
+        }
+      })
+      .catch(() => { });
+
     const activeSession = getUserSession();
     if (activeSession) {
       setSession(activeSession);
+      if (activeSession.backgroupdlo) {
+        setBgImage(activeSession.backgroupdlo);
+      }
       fetchStaffDetails(activeSession);
       fetchStaffTimetable(activeSession);
       fetchStaffLeave(activeSession);
@@ -611,15 +629,33 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
   };
 
   return (
-    <div className="dashboard-page">
-      {/* Ambient Orbs */}
-      <div className="kiosk-orb kiosk-orb-one" />
-      <div className="kiosk-orb kiosk-orb-two" />
+    <div className={`dashboard-page ${bgImage ? "has-bg-image" : ""}`}>
+      {/* Ambient Orbs only if no background image */}
+      {!bgImage && (
+        <>
+          <div className="kiosk-orb kiosk-orb-one" />
+          <div className="kiosk-orb kiosk-orb-two" />
+        </>
+      )}
 
-      {/* TOP COMMAND NAVBAR */}
-      <header className="dash-navbar" suppressHydrationWarning>
-        <div className="command-brand" onClick={handleLogout} style={{ cursor: "pointer" }} suppressHydrationWarning>
-          <div className="command-mark" aria-hidden="true" suppressHydrationWarning>
+      {/* Dynamic Background Image strictly from env parameter 'backgroupdlo' (NO extra color) */}
+      {bgImage && (
+        <div
+          className="dashboard-bg-backdrop"
+          aria-hidden="true"
+          style={{
+            backgroundImage: `url("${bgImage}")`,
+          }}
+        />
+      )}
+
+      {/* TOP COMMAND NAVBAR (ROLE SELECTION COMMAND THEME - FULLY DYNAMIC) */}
+      <header className="dash-navbar" style={{ position: "relative", zIndex: 30 }} suppressHydrationWarning>
+        <div className="command-brand" style={{ display: "flex", alignItems: "center", gap: "14px" }} suppressHydrationWarning>
+          <button className="command-back" onClick={handleLogout} aria-label="Back to role selection" title="Back to Kiosk Home">
+            <ArrowLeft size={19} />
+          </button>
+          <div className="command-mark" aria-hidden="true" style={{ width: "42px", height: "42px" }} suppressHydrationWarning>
             <img
               src={schoolLogo}
               alt={`${schoolName} Logo`}
@@ -632,11 +668,11 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
             />
           </div>
           <div suppressHydrationWarning>
-            <p className="command-kicker" suppressHydrationWarning>
+            <p className="command-kicker" style={{ margin: "0 0 2px" }} suppressHydrationWarning>
               {session?.initname ? `${session.initname.toUpperCase()} • SMART CAMPUS` : `${schoolName.toUpperCase()} • SMART CAMPUS`}
             </p>
             <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }} suppressHydrationWarning>
-              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "#1e293b", whiteSpace: "nowrap" }} suppressHydrationWarning>
+              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.25rem", fontWeight: 800, color: "#1e293b", whiteSpace: "nowrap" }} suppressHydrationWarning>
                 {schoolName}
               </h1>
               <span
@@ -650,7 +686,7 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
                   fontWeight: 800,
                   padding: "0.22rem 0.75rem",
                   borderRadius: "9999px",
-                  border: "1.5px solid rgba(251, 146, 60, 0.4)",
+                  border: "1.5px solid rgba(234, 88, 12, 0.35)",
                   boxShadow: "0 2px 8px rgba(234, 88, 12, 0.08)",
                   letterSpacing: "0.02em",
                   whiteSpace: "nowrap",
@@ -665,7 +701,74 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
         </div>
 
         {/* Profile Pill & Control Actions */}
-        <div className="dash-nav-actions" style={{ flexWrap: "nowrap" }}>
+        <div className="dash-nav-actions" style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "nowrap" }}>
+          {/* Live Campus Telemetry Pill */}
+          <div className="command-live-status">
+            <span style={{ background: "#16a34a" }} />
+            <span>Campus online</span>
+          </div>
+
+          {/* Live Command Time Pill */}
+          <div
+            className="command-time"
+            suppressHydrationWarning
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.45rem",
+              padding: "0 0.85rem",
+              minHeight: "34px",
+              height: "34px",
+              background: "rgba(255, 255, 255, 0.92)",
+              border: "1px solid rgba(254, 215, 170, 0.7)",
+              borderRadius: "9999px",
+              fontSize: "0.74rem",
+              fontWeight: 700,
+              color: "#334155",
+              boxShadow: "0 2px 8px rgba(234, 88, 12, 0.05)",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+            }}
+          >
+            <Calendar size={14} style={{ color: "#ea580c" }} />
+            <span suppressHydrationWarning>
+              {currentTime.toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
+            </span>
+            <b style={{ color: "#ea580c" }} suppressHydrationWarning>
+              {currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}
+            </b>
+          </div>
+
+          {/* Role Status Tag (Matching Login Header) */}
+          <div
+            className="login-role-status-badge"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "5px 12px",
+              borderRadius: "9999px",
+              border: "1.5px solid rgba(13, 148, 136, 0.4)",
+              background: "rgba(13, 148, 136, 0.1)",
+              color: "#0f766e",
+              fontSize: "0.76rem",
+              fontWeight: 800,
+              letterSpacing: "0.02em",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span
+              className="login-status-dot"
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                background: "#0d9488",
+              }}
+            />
+            <span>Faculty &amp; Academic Staff</span>
+          </div>
+
           {/* Staff Profile Pill */}
           <div
             className="dash-profile-pill"
@@ -683,21 +786,6 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
               <span className="dash-user-name">{staffName}</span>
               <span className="dash-user-role">{staffRole} • ID: {empId}</span>
             </div>
-          </div>
-
-          {/* Live Campus Telemetry Pill */}
-          <div className="command-live-status">
-            <span style={{ background: "#16a34a" }} />
-            <span>Campus online</span>
-          </div>
-
-          {/* Command Time Pill */}
-          <div className="dash-clock-widget">
-            <Calendar size={13} style={{ color: "#ea580c" }} />
-            <span>
-              {currentTime.toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short" })} •{" "}
-              <b>{currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}</b>
-            </span>
           </div>
 
           {/* Fullscreen Button */}
