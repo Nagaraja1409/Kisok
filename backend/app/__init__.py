@@ -1,1 +1,0 @@
-"""School AI Service."""
