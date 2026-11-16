@@ -6,9 +6,6 @@ const KIOSK_LOGO_KEY = "kiosk_institute_logo";
 const KIOSK_NAME_KEY = "kiosk_institute_name";
 
 function readDiskEnv(key: string): string {
-  if (typeof process !== "undefined" && process.env && process.env[key] && process.env[key]!.trim() !== "") {
-    return process.env[key]!.trim().replace(/^["']|["']$/g, "");
-  }
   if (typeof window === "undefined") {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -19,7 +16,8 @@ function readDiskEnv(key: string): string {
       for (const f of files) {
         const full = path.join(process.cwd(), f);
         if (fs.existsSync(full)) {
-          const lines = fs.readFileSync(full, "utf-8").split(/\r?\n/);
+          const content = fs.readFileSync(full, "utf-8");
+          const lines = content.split(/\r?\n/);
           for (const line of lines) {
             const trimmed = line.trim();
             if (trimmed.startsWith("#") || !trimmed.includes("=")) continue;
@@ -29,11 +27,18 @@ function readDiskEnv(key: string): string {
               if (val) return val;
             }
           }
+          const match = content.match(new RegExp(`(?:^|[\\r\\n\\s])${key}\\s*=\\s*["']?([^"'\\r\\n]+)["']?`, "m"));
+          if (match && match[1]) {
+            return match[1].trim();
+          }
         }
       }
     } catch {
       // ignore
     }
+  }
+  if (typeof process !== "undefined" && process.env && process.env[key] && process.env[key]!.trim() !== "") {
+    return process.env[key]!.trim().replace(/^["']|["']$/g, "");
   }
   return "";
 }
@@ -369,12 +374,15 @@ export function resolveCodeFromEnv(): string {
  * Retrieves the dynamic institution code (e.g. BBHS, BDC, MVPS).
  */
 export function getInstituteCode(): string {
+  // If explicitly specified in .env, honor .env as primary source of truth
+  const envCode = resolveCodeFromEnv();
+  if (envCode) return envCode;
+
   if (typeof window !== "undefined") {
     try {
       const session = getUserSession();
       if ((session as any)?.instCode && typeof (session as any).instCode === "string") {
-        const c = (session as any).instCode.trim().toUpperCase();
-        if (c !== "BDC" && c !== "MVPS") return c;
+        return (session as any).instCode.trim().toUpperCase();
       }
       if (session?.initname) {
         if (/balwin|baldwin/i.test(session.initname)) return "BBHS";
@@ -382,36 +390,72 @@ export function getInstituteCode(): string {
         if (/madhuvan/i.test(session.initname)) return "MVPS";
       }
       const sessionCode = sessionStorage.getItem("instCode");
-      if (
-        sessionCode &&
-        sessionCode.trim() !== "" &&
-        sessionCode.trim().toUpperCase() !== "BDC" &&
-        sessionCode.trim().toUpperCase() !== "MVPS"
-      ) {
+      if (sessionCode && sessionCode.trim() !== "") {
         return sessionCode.trim().toUpperCase();
       }
       const savedCode = localStorage.getItem("kiosk_institute_code");
-      if (
-        savedCode &&
-        savedCode.trim() !== "" &&
-        savedCode.trim().toUpperCase() !== "BDC" &&
-        savedCode.trim().toUpperCase() !== "MVPS"
-      ) {
+      if (savedCode && savedCode.trim() !== "") {
         return savedCode.trim().toUpperCase();
       }
     } catch {
       // fallback
     }
   }
-  return resolveCodeFromEnv();
+  return "MVPS";
 }
 
 /**
- * Retrieves dynamic AI assistant name based on institution code (e.g. "BBHS AI", "BDC AI", "MVPS AI").
+ * Resolves the dynamic AI assistant name directly from .env:
+ * 1. NEXT_PUBLIC_AI_NAME or AI_NAME
+ * 2. NEXT_PUBLIC_AI_ASSISTANT_NAME or AI_ASSISTANT_NAME
+ * 3. Fallback to "<INST_CODE> AI"
+ */
+export function resolveAiNameFromEnv(): string {
+  const explicit = (
+    readDiskEnv("NEXT_PUBLIC_AI_NAME") ||
+    readDiskEnv("AI_NAME") ||
+    readDiskEnv("NEXT_PUBLIC_AI_ASSISTANT_NAME") ||
+    readDiskEnv("AI_ASSISTANT_NAME") ||
+    readDiskEnv("NEXT_PUBLIC_COPILOT_NAME") ||
+    readDiskEnv("COPILOT_NAME") ||
+    ""
+  ).trim().replace(/^["']|["']$/g, "");
+
+  if (explicit) return explicit;
+
+  const code = resolveCodeFromEnv();
+  return `${code} AI`;
+}
+
+/**
+ * Retrieves dynamic AI assistant name configured in .env (e.g. "MVPS AI", "CBS AI", "BBHS AI").
+ * Driven purely from environment variables.
  */
 export function getAiAssistantName(): string {
-  const code = getInstituteCode();
-  return `${code} AI`;
+  if (typeof window !== "undefined") {
+    try {
+      // Check client-bundled NEXT_PUBLIC environment variables first
+      if (process.env.NEXT_PUBLIC_AI_NAME && process.env.NEXT_PUBLIC_AI_NAME.trim() !== "") {
+        return process.env.NEXT_PUBLIC_AI_NAME.trim().replace(/^["']|["']$/g, "");
+      }
+      if (process.env.NEXT_PUBLIC_AI_ASSISTANT_NAME && process.env.NEXT_PUBLIC_AI_ASSISTANT_NAME.trim() !== "") {
+        return process.env.NEXT_PUBLIC_AI_ASSISTANT_NAME.trim().replace(/^["']|["']$/g, "");
+      }
+
+      // Check cached localStorage/sessionStorage synced from /api/branding
+      const savedAiName = localStorage.getItem("kiosk_ai_name");
+      if (savedAiName && savedAiName.trim() !== "") {
+        return savedAiName.trim();
+      }
+      const sessionAiName = sessionStorage.getItem("kiosk_ai_name");
+      if (sessionAiName && sessionAiName.trim() !== "") {
+        return sessionAiName.trim();
+      }
+    } catch {
+      // fallback
+    }
+  }
+  return resolveAiNameFromEnv();
 }
 
 /**
