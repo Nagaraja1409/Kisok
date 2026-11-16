@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { getAiAssistantName } from "@/lib/session";
 import {
   ROLE_AI_METADATA,
   RoleAIFeatureItem,
@@ -29,10 +30,6 @@ import {
   Filter,
   ArrowRight,
   Zap,
-  Check,
-  ChevronRight,
-  Database,
-  Layers,
 } from "lucide-react";
 
 interface RoleAIFeatureExplorerProps {
@@ -70,6 +67,7 @@ export default function RoleAIFeatureExplorer({
   selectedFeatureId,
   className = "",
 }: RoleAIFeatureExplorerProps) {
+  const aiName = getAiAssistantName();
   const meta: RoleAIMetadata | undefined = ROLE_AI_METADATA[role];
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -92,14 +90,11 @@ export default function RoleAIFeatureExplorer({
       const matchesSearch =
         !q ||
         f.name.toLowerCase().includes(q) ||
-        f.description.toLowerCase().includes(q) ||
         f.category.toLowerCase().includes(q) ||
         f.prompts.some((p) => p.toLowerCase().includes(q));
       return matchesCategory && matchesSearch;
     });
   }, [meta, selectedCategory, searchQuery]);
-
-  const isLiveRole = role === "student_parent" || role === "teacher_staff";
 
   const handlePromptClick = (prompt: string) => {
     setActivePromptClicked(prompt);
@@ -110,7 +105,7 @@ export default function RoleAIFeatureExplorer({
   if (!meta) {
     return (
       <div style={{ padding: "1.5rem", textAlign: "center", color: "#64748b" }}>
-        No AI features registered for this role.
+        No AI topics registered for this role.
       </div>
     );
   }
@@ -167,7 +162,7 @@ export default function RoleAIFeatureExplorer({
                   lineHeight: 1.2,
                 }}
               >
-                Mapped AI Capabilities
+                Topics &amp; Questions
               </h3>
               <span style={{ fontSize: "0.7rem", color: "#64748b", fontWeight: 600 }}>
                 {meta.roleLabel}
@@ -175,7 +170,7 @@ export default function RoleAIFeatureExplorer({
             </div>
           </div>
 
-          {/* Dynamic / Static Status Pill */}
+          {/* Topics Count Pill */}
           <div
             style={{
               display: "inline-flex",
@@ -185,10 +180,9 @@ export default function RoleAIFeatureExplorer({
               borderRadius: "9999px",
               fontSize: "0.68rem",
               fontWeight: 800,
-              letterSpacing: "0.03em",
-              background: isLiveRole ? "#ecfdf5" : "#eff6ff",
-              color: isLiveRole ? "#059669" : "#2563eb",
-              border: `1px solid ${isLiveRole ? "#a7f3d0" : "#bfdbfe"}`,
+              background: meta.lightBg,
+              color: meta.primaryColor,
+              border: `1px solid ${meta.borderColor}`,
             }}
           >
             <span
@@ -196,11 +190,10 @@ export default function RoleAIFeatureExplorer({
                 width: 6,
                 height: 6,
                 borderRadius: "50%",
-                background: isLiveRole ? "#10b981" : "#3b82f6",
-                boxShadow: isLiveRole ? "0 0 8px #10b981" : "none",
+                background: meta.primaryColor,
               }}
             />
-            {isLiveRole ? "LIVE DATA CONNECTED" : "STATIC CAMPUS GUIDE"}
+            {meta.features.length} Topics
           </div>
         </div>
 
@@ -236,7 +229,7 @@ export default function RoleAIFeatureExplorer({
             />
             <input
               type="text"
-              placeholder={`Search ${meta.features.length} AI features or prompts...`}
+              placeholder={`Search topics or questions...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -311,7 +304,7 @@ export default function RoleAIFeatureExplorer({
         </div>
       </div>
 
-      {/* Feature List Body */}
+      {/* Feature & Question List Body */}
       <div
         style={{
           flex: 1,
@@ -333,7 +326,7 @@ export default function RoleAIFeatureExplorer({
             }}
           >
             <Filter size={24} style={{ margin: "0 auto 0.5rem", opacity: 0.5 }} />
-            No features match &quot;{searchQuery}&quot; in category &quot;{selectedCategory}&quot;.
+            No topics match &quot;{searchQuery}&quot; in category &quot;{selectedCategory}&quot;.
           </div>
         ) : (
           filteredFeatures.map((feature) => {
@@ -356,164 +349,117 @@ export default function RoleAIFeatureExplorer({
                   transition: "all 0.2s ease",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "0.55rem",
+                  gap: "0.6rem",
                 }}
               >
-                {/* Feature Header */}
+                {/* Feature Header (Topic) */}
                 <div
                   style={{
                     display: "flex",
-                    alignItems: "flex-start",
-                    justifyContent: "space-between",
-                    gap: "0.5rem",
+                    alignItems: "center",
+                    gap: "0.55rem",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.55rem" }}>
-                    <div
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: "10px",
-                        background: `${feature.accentColor}18`,
-                        color: feature.accentColor,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <IconComponent size={16} />
-                    </div>
-                    <div>
-                      <h4
-                        style={{
-                          fontSize: "0.84rem",
-                          fontWeight: 800,
-                          color: "#1e293b",
-                          margin: 0,
-                          lineHeight: 1.25,
-                        }}
-                      >
-                        {feature.name}
-                      </h4>
-                      <span
-                        style={{
-                          fontSize: "0.64rem",
-                          fontWeight: 700,
-                          color: "#64748b",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.04em",
-                        }}
-                      >
-                        {feature.category}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Badge */}
-                  <span
-                    style={{
-                      background: feature.badgeBg,
-                      color: feature.badgeColor,
-                      fontSize: "0.62rem",
-                      fontWeight: 800,
-                      padding: "0.2rem 0.55rem",
-                      borderRadius: "6px",
-                      whiteSpace: "nowrap",
-                      letterSpacing: "0.02em",
-                      border: `1px solid ${feature.badgeColor}33`,
-                    }}
-                  >
-                    {feature.badge}
-                  </span>
-                </div>
-
-                {/* Description */}
-                <p
-                  style={{
-                    fontSize: "0.72rem",
-                    color: "#475569",
-                    lineHeight: 1.45,
-                    margin: 0,
-                  }}
-                >
-                  {feature.description}
-                </p>
-
-                {/* Interactive One-Tap Prompt Chips */}
-                <div style={{ marginTop: "0.2rem" }}>
                   <div
                     style={{
-                      fontSize: "0.64rem",
-                      fontWeight: 800,
-                      color: "#94a3b8",
-                      marginBottom: "0.3rem",
+                      width: 32,
+                      height: 32,
+                      borderRadius: "10px",
+                      background: `${feature.accentColor}18`,
+                      color: feature.accentColor,
                       display: "flex",
                       alignItems: "center",
-                      gap: "4px",
+                      justifyContent: "center",
+                      flexShrink: 0,
                     }}
                   >
-                    <Zap size={11} style={{ color: meta.primaryColor }} />
-                    Tap to ask GREEN_AI:
+                    <IconComponent size={16} />
                   </div>
+                  <div style={{ flex: 1 }}>
+                    <h4
+                      style={{
+                        fontSize: "0.85rem",
+                        fontWeight: 800,
+                        color: "#1e293b",
+                        margin: 0,
+                        lineHeight: 1.25,
+                      }}
+                    >
+                      {feature.name}
+                    </h4>
+                    <span
+                      style={{
+                        fontSize: "0.64rem",
+                        fontWeight: 700,
+                        color: "#64748b",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
+                      }}
+                    >
+                      {feature.category}
+                    </span>
+                  </div>
+                </div>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "0.35rem",
-                    }}
-                  >
-                    {feature.prompts.map((prompt, pIdx) => {
-                      const isClicked = activePromptClicked === prompt;
-                      return (
-                        <button
-                          key={pIdx}
-                          onClick={() => handlePromptClick(prompt)}
+                {/* Interactive Questions List */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.35rem",
+                  }}
+                >
+                  {feature.prompts.map((prompt, pIdx) => {
+                    const isClicked = activePromptClicked === prompt;
+                    return (
+                      <button
+                        key={pIdx}
+                        onClick={() => handlePromptClick(prompt)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "8px",
+                          padding: "0.45rem 0.75rem",
+                          borderRadius: "10px",
+                          border: isClicked
+                            ? `1.5px solid ${meta.primaryColor}`
+                            : "1px solid #e2e8f0",
+                          background: isClicked ? meta.lightBg : "#ffffff",
+                          color: isClicked ? meta.primaryColor : "#334155",
+                          fontSize: "0.74rem",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          textAlign: "left",
+                          transition: "all 0.15s ease",
+                          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.03)",
+                          width: "100%",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = meta.primaryColor;
+                          e.currentTarget.style.color = meta.primaryColor;
+                          e.currentTarget.style.background = meta.lightBg;
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isClicked) {
+                            e.currentTarget.style.borderColor = "#e2e8f0";
+                            e.currentTarget.style.color = "#334155";
+                            e.currentTarget.style.background = "#ffffff";
+                          }
+                        }}
+                      >
+                        <span>{prompt}</span>
+                        <ArrowRight
+                          size={12}
                           style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "5px",
-                            padding: "0.3rem 0.65rem",
-                            borderRadius: "8px",
-                            border: isClicked
-                              ? `1.5px solid ${meta.primaryColor}`
-                              : "1px solid #e2e8f0",
-                            background: isClicked ? meta.lightBg : "#ffffff",
-                            color: isClicked ? meta.primaryColor : "#334155",
-                            fontSize: "0.71rem",
-                            fontWeight: 700,
-                            cursor: "pointer",
-                            textAlign: "left",
-                            transition: "all 0.15s ease",
-                            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)",
+                            color: meta.primaryColor,
+                            opacity: isClicked ? 1 : 0.6,
+                            flexShrink: 0,
                           }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = meta.primaryColor;
-                            e.currentTarget.style.color = meta.primaryColor;
-                            e.currentTarget.style.background = meta.lightBg;
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isClicked) {
-                              e.currentTarget.style.borderColor = "#e2e8f0";
-                              e.currentTarget.style.color = "#334155";
-                              e.currentTarget.style.background = "#ffffff";
-                            }
-                          }}
-                        >
-                          <span>{prompt}</span>
-                          <ArrowRight
-                            size={11}
-                            style={{
-                              color: meta.primaryColor,
-                              opacity: isClicked ? 1 : 0.6,
-                              flexShrink: 0,
-                            }}
-                          />
-                        </button>
-                      );
-                    })}
-                  </div>
+                        />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -536,13 +482,11 @@ export default function RoleAIFeatureExplorer({
         }}
       >
         <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-          <Database size={12} style={{ color: meta.primaryColor }} />
-          {isLiveRole
-            ? "Live VAPS UI Context Synchronized"
-            : "Static Knowledge Base Loaded"}
+          <Sparkles size={12} style={{ color: meta.primaryColor }} />
+          Tap any question to ask {aiName}
         </span>
         <span style={{ fontWeight: 700, color: meta.primaryColor }}>
-          {meta.features.length} Features Ready
+          {meta.features.length} Topics
         </span>
       </div>
     </div>

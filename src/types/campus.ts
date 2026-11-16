@@ -9,6 +9,7 @@ export interface CampusLiveNotice {
 export interface CampusBranding {
   instituteName: string;
   shortCode: string;
+  aiName?: string;
   logo: string;
   motto: string;
   affiliation: string;

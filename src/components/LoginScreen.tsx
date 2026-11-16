@@ -32,7 +32,7 @@ import {
   X,
 } from "lucide-react";
 import { SessionInfo } from "@/types/auth";
-import { saveUserSession, getRememberedUser, getInstituteLogo, getInstituteName } from "@/lib/session";
+import { saveUserSession, getRememberedUser, getInstituteLogo, getInstituteName, getAiAssistantName } from "@/lib/session";
 import { CLIENT_API_ENDPOINTS } from "@/config/api";
 
 export type RoleType = "student" | "staff" | "visitor" | "alumni";
@@ -79,6 +79,7 @@ export default function LoginScreen({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [schoolLogo, setSchoolLogo] = useState<string>(() => getInstituteLogo());
   const [schoolName, setSchoolName] = useState<string>(() => getInstituteName());
+  const [aiName, setAiName] = useState<string>(() => getAiAssistantName());
 
   // Real-time clock & fullscreen sync
   useEffect(() => {
@@ -123,6 +124,12 @@ export default function LoginScreen({
           setSchoolName(data.name);
           try {
             localStorage.setItem("kiosk_institute_name", data.name);
+          } catch { }
+        }
+        if (data.aiName) {
+          setAiName(data.aiName);
+          try {
+            localStorage.setItem("kiosk_ai_name", data.aiName);
           } catch { }
         }
       })
@@ -659,22 +666,6 @@ export default function LoginScreen({
             />
             <span>{config.roleBadge}</span>
           </div>
-
-          {/* Server API & MI_ID Config Toggle */}
-          <button
-            type="button"
-            onClick={() => setShowServerConfig(!showServerConfig)}
-            className="command-fullscreen"
-            title="Configure School API Server & Institution ID (From App.config)"
-            aria-label="Server Configuration"
-            style={{
-              cursor: "pointer",
-              background: showServerConfig ? "#ea580c" : undefined,
-              color: showServerConfig ? "#ffffff" : undefined,
-            }}
-          >
-            <Server size={14} style={{ color: showServerConfig ? "#ffffff" : config.accentColor }} />
-          </button>
 
           {/* Fullscreen Toggle Button */}
           <button
@@ -1696,48 +1687,7 @@ export default function LoginScreen({
               </div>
 
               {/* Remember Me & Help Row */}
-              <div
-                className="login-remember-row"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  fontSize: "0.82rem",
-                  color: "#475569",
-                  padding: "2px 2px",
-                }}
-              >
-                <label
-                  className="login-remember-label"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    cursor: "pointer",
-                    fontWeight: 600,
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    style={{ width: "16px", height: "16px", accentColor: config.accentColor, cursor: "pointer" }}
-                  />
-                  <span>Remember on this kiosk</span>
-                </label>
-                <a
-                  href="#forgot"
-                  className="login-forgot-link"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    alert("Please contact the Kiosk Helpdesk at Ext. 104 or visit the administrative reception.");
-                  }}
-                  style={{ color: config.accentColor, textDecoration: "none", fontWeight: 700 }}
-                >
-                  Forgot ID / Help?
-                </a>
-              </div>
-
+              
               {/* Primary High-Visibility Sign In Button */}
               <button
                 type="submit"
@@ -1849,7 +1799,7 @@ export default function LoginScreen({
           <span>Digital Campus Kiosk</span>
         </div>
         <button className="assistant-button" type="button" onClick={onBackToKiosk}>
-          <span className="assistant-pulse" /> Need help? <b>Ask GREEN_AI</b>
+          <span className="assistant-pulse" /> Need help? <b>Ask {aiName}</b>
         </button>
       </footer>
     </div>

@@ -1,6 +1,7 @@
 /**
- * Client service to communicate with GREEN_AI Multi-Agent Backend
+ * Client service to communicate with Multi-Agent AI Backend
  */
+import { getAiAssistantName } from "@/lib/session";
 
 export interface GreenAiChatOptions {
   message: string;
@@ -58,7 +59,7 @@ export async function sendGreenAiQuery(options: GreenAiChatOptions): Promise<Gre
     console.error("[sendGreenAiQuery] Error calling /api/ai/chat:", err);
     return {
       success: false,
-      answer: "GREEN_AI is currently operating in offline mode. Please verify your connection to the campus AI server.",
+      answer: `${getAiAssistantName()} is currently operating in offline mode. Please verify your connection to the campus AI server.`,
       followupSuggestions: ["Try asking again", "Check timetable", "Check attendance"],
     };
   }

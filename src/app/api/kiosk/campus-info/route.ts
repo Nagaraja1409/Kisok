@@ -55,11 +55,23 @@ export async function GET() {
       readEnvVar("INST_CODE_BGIMAGE") ||
       "";
 
+    const envAiName =
+      readEnvVar("NEXT_PUBLIC_AI_NAME") ||
+      readEnvVar("AI_NAME") ||
+      readEnvVar("NEXT_PUBLIC_AI_ASSISTANT_NAME") ||
+      readEnvVar("AI_ASSISTANT_NAME") ||
+      "";
+
     if (!data.branding.instituteName && envInstituteName) {
       data.branding.instituteName = envInstituteName;
     }
     if (!data.branding.logo && envLogo) {
       data.branding.logo = envLogo;
+    }
+    if (!data.branding.aiName && envAiName) {
+      data.branding.aiName = envAiName;
+    } else if (!data.branding.aiName && data.branding.shortCode) {
+      data.branding.aiName = `${data.branding.shortCode} AI`;
     }
 
     return NextResponse.json(data, {

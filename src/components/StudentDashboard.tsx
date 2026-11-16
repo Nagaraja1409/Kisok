@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import MarkdownResponse from "@/components/chat/MarkdownResponse";
+import UnifiedAIChatPanel from "@/components/chat/UnifiedAIChatPanel";
 import { getUserSession, clearUserSession, getInstituteLogo, getInstituteName, getAiAssistantName } from "@/lib/session";
 import { SessionInfo } from "@/types/auth";
 import { CLIENT_API_ENDPOINTS } from "@/config/api";
@@ -204,27 +205,6 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
   const [selectedOverallExamId, setSelectedOverallExamId] = useState<string>("");
   const [examOverallReports, setExamOverallReports] = useState<any[]>([]);
 
-  // AI Chat Space State
-  const [chatMessages, setChatMessages] = useState<
-    { id: string; sender: "bot" | "user"; text: string; time: string; suggestions?: string[] }[]
-  >([
-    {
-      id: "msg-welcome",
-      sender: "bot",
-      text: `👋 Hello! I am **${getAiAssistantName()}**, your Student & Parent Kiosk Assistant. Ask me anything about your attendance, exam results, timetable, homework diary, or fees!`,
-      time: "Just now",
-      suggestions: [
-        "What is my attendance rate?",
-        "Show my exam results",
-        "What is my timetable today?",
-        "Do I have pending fee balance?",
-      ],
-    },
-  ]);
-  const [chatInputText, setChatInputText] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const chatMessagesEndRef = useRef<HTMLDivElement>(null);
-
   // Clock timer
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -237,10 +217,6 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
     document.addEventListener("fullscreenchange", handleFsChange);
     return () => document.removeEventListener("fullscreenchange", handleFsChange);
   }, []);
-
-  useEffect(() => {
-    chatMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages, isTyping]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -744,72 +720,6 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
     if (screen === "timetable") fetchTimetable();
     if (screen === "exam") fetchExam();
     if (screen === "exam-overall") fetchExamOverall();
-  };
-
-  // AI Chat Handler connected to /api/chat
-  const handleSendChatMessage = async (promptText?: string) => {
-    if (isTyping) return;
-    const q = (promptText || chatInputText).trim();
-    if (!q) return;
-
-    const userMsg = {
-      id: `msg-user-${Date.now()}`,
-      sender: "user" as const,
-      text: q,
-      time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-    };
-
-    setChatMessages((prev) => [...prev, userMsg]);
-    setChatInputText("");
-    setIsTyping(true);
-
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: q,
-          role: "student",
-          history: chatMessages.slice(-6).map((m) => ({
-            role: m.sender === "user" ? "user" : "assistant",
-            content: m.text,
-          })),
-        }),
-      });
-
-      const data = await res.json();
-      const botReply = data.answer || "I could not retrieve an answer at this time. Please try again.";
-
-      const suggestions = [
-        "What is my attendance rate?",
-        "Show my exam results",
-        "What is my timetable today?",
-        "Do I have pending fee balance?",
-      ];
-
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          id: `msg-bot-${Date.now()}`,
-          sender: "bot",
-          text: botReply,
-          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-          suggestions,
-        },
-      ]);
-    } catch {
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          id: `msg-bot-${Date.now()}`,
-          sender: "bot",
-          text: "⚠️ Campus AI assistant is temporarily unavailable. Please check your network connection or try again shortly.",
-          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-        },
-      ]);
-    } finally {
-      setIsTyping(false);
-    }
   };
 
   const studentDisplayName = studentDetails.name || session?.name || session?.username || "Student";
@@ -3572,170 +3482,11 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
           VIEW 10: DEDICATED FULL SCREEN — GREENBOT AI SPACE
           ======================================================== */}
       {currentScreen === "aispace" && (
-        <section className="student-fullscreen-page">
-          <div className="kiosk-orb kiosk-orb-one" />
-          <div className="kiosk-orb kiosk-orb-two" />
-
-          <div className="student-screen-subnav">
-            <button className="student-back-to-dash-btn" onClick={() => handleNavigateTo("dashboard")}>
-              <ArrowLeft size={16} /> Back to Dashboard
-            </button>
-
-            <div className="student-screen-title-area">
-              <div className="student-screen-icon-bubble" style={{ background: "#fff7ed", color: "#ea580c" }}>
-                <Sparkles size={20} />
-              </div>
-              <div>
-                <h2>{aiName} • Student &amp; Parent AI Assistant</h2>
-                <p>Instant answers on attendance, exam scorecards, timetable, and school notices</p>
-              </div>
-            </div>
-
-            <div className="student-screen-nav-tools">
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: 800, color: "#16a34a" }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#16a34a" }} />
-                AI Online
-              </div>
-            </div>
-          </div>
-
-          <div className="student-screen-scroll-body" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-            <div
-              className="student-screen-card"
-              style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                overflow: "hidden",
-                minHeight: "450px",
-              }}
-            >
-              {/* Chat Message Window */}
-              <div
-                style={{
-                  flex: 1,
-                  padding: "1.25rem",
-                  overflowY: "auto",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.85rem",
-                  background: "#f8fafc",
-                }}
-              >
-                {chatMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: msg.sender === "user" ? "flex-end" : "flex-start",
-                      maxWidth: "80%",
-                      alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
-                    }}
-                  >
-                    <div
-                      style={{
-                        padding: "0.75rem 1rem",
-                        borderRadius: "16px",
-                        background: msg.sender === "user" ? "#ea580c" : "#ffffff",
-                        color: msg.sender === "user" ? "#ffffff" : "#1e293b",
-                        fontSize: "0.82rem",
-                        lineHeight: 1.5,
-                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-                        border: msg.sender === "user" ? "none" : "1px solid rgba(226, 232, 240, 0.9)",
-                        maxWidth: "100%",
-                      }}
-                    >
-                      <MarkdownResponse content={msg.text} isUser={msg.sender === "user"} />
-                    </div>
-                    <span style={{ fontSize: "0.65rem", color: "#94a3b8", marginTop: "3px", padding: "0 4px" }}>
-                      {msg.time}
-                    </span>
-
-                    {/* Suggestions Buttons */}
-                    {msg.suggestions && msg.suggestions.length > 0 && (
-                      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>
-                        {msg.suggestions.map((sug, sIdx) => (
-                          <button
-                            key={sIdx}
-                            onClick={() => handleSendChatMessage(sug)}
-                            style={{
-                              fontSize: "0.72rem",
-                              fontWeight: 700,
-                              color: "#ea580c",
-                              background: "#fff7ed",
-                              border: "1px solid rgba(254, 215, 170, 0.8)",
-                              padding: "3px 10px",
-                              borderRadius: "9999px",
-                              cursor: "pointer",
-                            }}
-                          >
-                            {sug}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {isTyping && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#ea580c", fontSize: "0.75rem", fontWeight: 600 }}>
-                    <RefreshCw size={13} className="animate-spin" />
-                    <span>{aiName} is typing an answer...</span>
-                  </div>
-                )}
-                <div ref={chatMessagesEndRef} />
-              </div>
-
-              {/* Quick Prompts Bar */}
-              <div className="ai-quick-prompts-bar">
-                <span style={{ fontSize: "0.68rem", fontWeight: 800, color: "#94a3b8", flexShrink: 0 }}>
-                  Quick Prompts:
-                </span>
-                <button className="ai-quick-prompt-btn" disabled={isTyping} onClick={() => handleSendChatMessage("What is my attendance rate?")}>
-                  📊 Attendance Ratio
-                </button>
-                <button className="ai-quick-prompt-btn" disabled={isTyping} onClick={() => handleSendChatMessage("Show my exam results")}>
-                  📝 Exam Scorecards
-                </button>
-                <button className="ai-quick-prompt-btn" disabled={isTyping} onClick={() => handleSendChatMessage("What is my timetable today?")}>
-                  🗓️ Today&apos;s Classes
-                </button>
-                <button className="ai-quick-prompt-btn" disabled={isTyping} onClick={() => handleSendChatMessage("Do I have pending fee balance?")}>
-                  💳 Fee Balance Status
-                </button>
-                <button className="ai-quick-prompt-btn" disabled={isTyping} onClick={() => handleSendChatMessage("Show homework diary")}>
-                  📚 Homework Diary
-                </button>
-              </div>
-
-              {/* Chat Input Bar */}
-              <div className="ai-chat-input-bar">
-                <input
-                  type="text"
-                  className="ai-chat-text-input"
-                  placeholder={`Ask ${aiName} about attendance, report card marks, timetable, or fees...`}
-                  value={chatInputText}
-                  disabled={isTyping}
-                  onChange={(e) => setChatInputText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSendChatMessage();
-                    }
-                  }}
-                />
-                <button
-                  className="ai-chat-send-btn"
-                  onClick={() => handleSendChatMessage()}
-                  disabled={isTyping}
-                  title={`Send message to ${aiName}`}
-                >
-                  <Send size={15} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
+        <UnifiedAIChatPanel
+          role="student_parent"
+          onBack={() => handleNavigateTo("dashboard")}
+          userName={studentDisplayName}
+        />
       )}
 
       {/* COMPACT COMMAND FOOTER */}

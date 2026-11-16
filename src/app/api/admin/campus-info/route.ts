@@ -79,6 +79,10 @@ export async function POST(req: NextRequest) {
       envUpdates["NEXT_PUBLIC_INST_CODE"] = payload.branding.shortCode;
       envUpdates["INST_CODE"] = payload.branding.shortCode;
     }
+    if (payload.branding.aiName) {
+      envUpdates["NEXT_PUBLIC_AI_NAME"] = payload.branding.aiName;
+      envUpdates["AI_NAME"] = payload.branding.aiName;
+    }
 
     if (Object.keys(envUpdates).length > 0) {
       syncEnvFile(".env", envUpdates);

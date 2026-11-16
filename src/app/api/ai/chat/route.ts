@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveAiNameFromEnv } from "@/lib/session";
 
 const FASTAPI_URL = process.env.FASTAPI_BACKEND_URL || "http://127.0.0.1:8000";
 
@@ -69,8 +70,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Dynamic smart fallback if backend process is not currently listening
+    const aiName = resolveAiNameFromEnv();
     const lower = message.toLowerCase();
-    let fallbackAnswer = "Hello! As GREEN_AI, I have access to your live campus records. What would you like to inquire about?";
+    let fallbackAnswer = `Hello! As ${aiName}, I have access to your live campus records. What would you like to inquire about?`;
     let suggestions = ["What is my attendance rate?", "Show my timetable", "Check fee dues"];
 
     if (lower.includes("attendance")) {
@@ -90,7 +92,7 @@ export async function POST(req: NextRequest) {
       success: true,
       answer: fallbackAnswer,
       followup_suggestions: suggestions,
-      selected_agent_name: "GREEN_AI Kiosk Assistant",
+      selected_agent_name: `${aiName} Kiosk Assistant`,
       provider_used: "dynamic-kiosk-fallback",
     });
   } catch (error: any) {

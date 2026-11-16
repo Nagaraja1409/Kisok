@@ -116,7 +116,16 @@ export async function GET() {
     }
   }
 
-  const aiName = `${resolvedCode} AI`;
+  const rawAiName =
+    readEnv("NEXT_PUBLIC_AI_NAME") ||
+    readEnv("AI_NAME") ||
+    readEnv("NEXT_PUBLIC_AI_ASSISTANT_NAME") ||
+    readEnv("AI_ASSISTANT_NAME") ||
+    readEnv("NEXT_PUBLIC_COPILOT_NAME") ||
+    readEnv("COPILOT_NAME") ||
+    "";
+
+  const aiName = rawAiName.trim() || `${resolvedCode} AI`;
 
   return NextResponse.json({
     success: true,

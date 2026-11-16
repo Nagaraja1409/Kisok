@@ -25,7 +25,7 @@ export const ROLE_AI_METADATA: Record<string, RoleAIMetadata> = {
   student_parent: {
     roleKey: "student_parent",
     roleLabel: "Student & Parent AI Space",
-    subtitle: "Grounded in live attendance, fee ledgers, exam scorecards, and class timetables.",
+    subtitle: "Assistance for attendance records, fee ledgers, exam scorecards, and class timetables.",
     primaryColor: "#ea580c",
     lightBg: "#fff7ed",
     borderColor: "rgba(254, 215, 170, 0.8)",

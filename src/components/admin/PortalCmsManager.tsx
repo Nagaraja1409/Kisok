@@ -1043,6 +1043,27 @@ export default function PortalCmsManager({ onBackToDashboard }: { onBackToDashbo
 
                   <div>
                     <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, marginBottom: "4px" }}>
+                      AI Copilot / Assistant Name (e.g. MVPS AI, CBS AI)
+                    </label>
+                    <input
+                      type="text"
+                      value={data.branding.aiName || ""}
+                      onChange={(e) =>
+                        setData({ ...data, branding: { ...data.branding, aiName: e.target.value } })
+                      }
+                      placeholder="e.g. MVPS AI"
+                      style={{
+                        width: "100%",
+                        padding: "0.55rem 0.8rem",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        fontSize: "0.85rem",
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, marginBottom: "4px" }}>
                       Institutional Motto / Slogan
                     </label>
                     <input
@@ -1894,17 +1915,18 @@ export default function PortalCmsManager({ onBackToDashboard }: { onBackToDashbo
         )}
 
         {/* =========================================================================
-           TAB 5: PHOTO GALLERY
+           TAB 5: PHOTO GALLERY & HOME SLIDESHOW (BROWSE FULL GALLERY)
            ========================================================================= */}
         {activeTab === "gallery" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#0e2a47" }}>
-                  Photo Gallery &amp; Campus Moments
+                <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#0e2a47", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <ImageIcon size={18} style={{ color: "#ea580c" }} />
+                  Photo Gallery &amp; Home Slideshow (Browse Full Gallery)
                 </h3>
                 <p style={{ margin: "2px 0 0", fontSize: "0.75rem", color: "#64748b" }}>
-                  Upload photos across Academics, Sports, Cultural Arts, and Campus Life.
+                  Upload and manage campus photos displayed in the Kiosk home background slideshow, the "Browse Full Gallery" modal, and on /dashboard.
                 </p>
               </div>
 
@@ -1913,50 +1935,76 @@ export default function PortalCmsManager({ onBackToDashboard }: { onBackToDashbo
                 onClick={() => {
                   const newItem: GalleryItem = {
                     id: `gallery_${Date.now()}`,
-                    title: "Campus Moment",
+                    title: "New Campus Moment",
                     shortTitle: "Campus Life",
-                    category: "Campus",
+                    category: "Campus & Fleet",
                     categoryFilter: "facilities",
-                    date: "Oct 2026",
-                    description: "Student engagement and campus activity showcase.",
+                    date: "Nov 2026",
+                    description: "Capturing dynamic student growth, activities, and campus excellence.",
                     src: "/mvps/facilities/classrooms_01.jpg",
+                    featured: true,
                   };
-                  setData({ ...data, gallery: [...data.gallery, newItem] });
+                  setData({ ...data, gallery: [newItem, ...data.gallery] });
                 }}
                 style={{
                   background: "#ea580c",
                   color: "#ffffff",
                   border: "none",
                   borderRadius: "8px",
-                  padding: "0.45rem 0.95rem",
-                  fontSize: "0.78rem",
+                  padding: "0.5rem 1rem",
+                  fontSize: "0.8rem",
                   fontWeight: 700,
                   display: "flex",
                   alignItems: "center",
-                  gap: "4px",
+                  gap: "6px",
                   cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(234, 88, 12, 0.25)",
                 }}
               >
-                <Plus size={14} /> Add Gallery Item
+                <Plus size={15} /> Add Gallery Photo
               </button>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1rem" }}>
+            {/* Quick summary stats pill */}
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                flexWrap: "wrap",
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                padding: "8px 12px",
+                borderRadius: "10px",
+                fontSize: "0.74rem",
+                color: "#475569",
+              }}
+            >
+              <span>Total Photos: <b>{data.gallery.length}</b></span>
+              <span>• Sports: <b>{data.gallery.filter((g) => g.categoryFilter === "sports").length}</b></span>
+              <span>• Academics: <b>{data.gallery.filter((g) => g.categoryFilter === "academics").length}</b></span>
+              <span>• Co-Curricular &amp; Stage: <b>{data.gallery.filter((g) => g.categoryFilter === "cultural").length}</b></span>
+              <span>• Campus &amp; Fleet: <b>{data.gallery.filter((g) => g.categoryFilter === "facilities").length}</b></span>
+              <span>• In Home Slideshow: <b>{data.gallery.filter((g) => g.featured !== false).length}</b></span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.25rem" }}>
               {data.gallery.map((item, idx) => (
                 <div
                   key={item.id}
                   style={{
-                    background: "#f8fafc",
-                    borderRadius: "12px",
-                    border: "1px solid #e2e8f0",
-                    padding: "0.85rem",
+                    background: "#ffffff",
+                    borderRadius: "14px",
+                    border: "1.5px solid #e2e8f0",
+                    padding: "1rem",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "8px",
+                    gap: "10px",
+                    boxShadow: "0 2px 8px rgba(15, 23, 42, 0.04)",
                   }}
                 >
+                  {/* Photo Input (Upload or URL with banner preview) */}
                   <PhotoInputControl
-                    label={`Photo (${item.title})`}
+                    label={`Photo #${idx + 1}: ${item.title || "Campus Moment"}`}
                     value={item.src}
                     onChange={(val) => {
                       const updated = [...data.gallery];
@@ -1965,70 +2013,194 @@ export default function PortalCmsManager({ onBackToDashboard }: { onBackToDashbo
                     }}
                     category="gallery"
                     previewShape="banner"
+                    subtext="Select a local JPG/PNG/WebP photo or enter a cloud image URL."
                     isUploading={uploadingField?.startsWith("gallery")}
                     onUploadFile={handleFileUpload}
                   />
 
-                  <input
-                    type="text"
-                    value={item.title}
-                    placeholder="Title"
-                    onChange={(e) => {
-                      const updated = [...data.gallery];
-                      updated[idx].title = e.target.value;
-                      setData({ ...data, gallery: updated });
-                    }}
-                    style={{ padding: "0.4rem 0.65rem", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", fontWeight: 700 }}
-                  />
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
-                    <select
-                      value={item.categoryFilter}
-                      onChange={(e) => {
-                        const updated = [...data.gallery];
-                        updated[idx].categoryFilter = e.target.value as any;
-                        setData({ ...data, gallery: updated });
-                      }}
-                      style={{ padding: "0.35rem 0.5rem", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.75rem" }}
-                    >
-                      <option value="academics">Academics</option>
-                      <option value="sports">Sports</option>
-                      <option value="cultural">Cultural</option>
-                      <option value="facilities">Campus</option>
-                    </select>
-
+                  {/* Title */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <label style={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748b" }}>Photo Title (Headline)</label>
                     <input
                       type="text"
-                      value={item.date}
-                      placeholder="Date (e.g. Oct 2026)"
+                      value={item.title}
+                      placeholder="Photo Title (e.g. Inter-House Cricket Championship Final)"
                       onChange={(e) => {
                         const updated = [...data.gallery];
-                        updated[idx].date = e.target.value;
+                        updated[idx].title = e.target.value;
                         setData({ ...data, gallery: updated });
                       }}
-                      style={{ padding: "0.35rem 0.5rem", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.75rem" }}
+                      style={{ padding: "0.45rem 0.65rem", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", fontWeight: 700 }}
                     />
                   </div>
 
-                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                    <button
-                      onClick={() => {
-                        const updated = data.gallery.filter((_, i) => i !== idx);
+                  {/* Category & Date */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "8px" }}>
+                    <div>
+                      <label style={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748b" }}>Category Tab</label>
+                      <select
+                        value={item.categoryFilter}
+                        onChange={(e) => {
+                          const val = e.target.value as any;
+                          const labelMap: Record<string, string> = {
+                            sports: "Sports & Athletics",
+                            academics: "Academics & Labs",
+                            cultural: "Co-Curricular & Stage",
+                            facilities: "Campus & Fleet",
+                          };
+                          const updated = [...data.gallery];
+                          updated[idx].categoryFilter = val;
+                          updated[idx].category = labelMap[val] || "Campus";
+                          setData({ ...data, gallery: updated });
+                        }}
+                        style={{ width: "100%", padding: "0.45rem 0.5rem", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                      >
+                        <option value="sports">Sports &amp; Athletics</option>
+                        <option value="academics">Academics &amp; Labs</option>
+                        <option value="cultural">Co-Curricular &amp; Stage</option>
+                        <option value="facilities">Campus &amp; Fleet</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748b" }}>Event Date / Period</label>
+                      <input
+                        type="text"
+                        value={item.date}
+                        placeholder="e.g. Nov 2026"
+                        onChange={(e) => {
+                          const updated = [...data.gallery];
+                          updated[idx].date = e.target.value;
+                          setData({ ...data, gallery: updated });
+                        }}
+                        style={{ width: "100%", padding: "0.45rem 0.55rem", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.78rem" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Description / Caption for Full Gallery Lightbox */}
+                  <div>
+                    <label style={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748b" }}>
+                      Caption / Description (Displayed in "Browse Full Gallery" Lightbox)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={item.description || ""}
+                      placeholder="Detailed caption explaining this campus event or achievement..."
+                      onChange={(e) => {
+                        const updated = [...data.gallery];
+                        updated[idx].description = e.target.value;
                         setData({ ...data, gallery: updated });
                       }}
                       style={{
-                        background: "#fee2e2",
-                        border: "1px solid #fecaca",
-                        color: "#ef4444",
+                        width: "100%",
+                        padding: "0.45rem 0.65rem",
                         borderRadius: "6px",
-                        padding: "0.3rem 0.6rem",
-                        fontSize: "0.7rem",
-                        fontWeight: 700,
-                        cursor: "pointer",
+                        border: "1px solid #cbd5e1",
+                        fontSize: "0.76rem",
+                        resize: "vertical",
                       }}
-                    >
-                      Delete
-                    </button>
+                    />
+                  </div>
+
+                  {/* Action Bar: Slideshow Toggle, Reorder, and Delete */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: "0.5rem", marginTop: "2px" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", cursor: "pointer", fontWeight: 600, color: item.featured !== false ? "#ea580c" : "#64748b" }}>
+                      <input
+                        type="checkbox"
+                        checked={item.featured !== false}
+                        onChange={(e) => {
+                          const updated = [...data.gallery];
+                          updated[idx].featured = e.target.checked;
+                          setData({ ...data, gallery: updated });
+                        }}
+                      />
+                      ★ Home Slideshow
+                    </label>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      {/* Reorder Buttons */}
+                      <div style={{ display: "flex", gap: "2px" }}>
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => {
+                            if (idx === 0) return;
+                            const updated = [...data.gallery];
+                            const temp = updated[idx];
+                            updated[idx] = updated[idx - 1];
+                            updated[idx - 1] = temp;
+                            setData({ ...data, gallery: updated });
+                          }}
+                          title="Move photo earlier in gallery"
+                          style={{
+                            background: "#f1f5f9",
+                            border: "none",
+                            borderRadius: "4px",
+                            width: "24px",
+                            height: "24px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: idx === 0 ? "default" : "pointer",
+                            opacity: idx === 0 ? 0.4 : 1,
+                          }}
+                        >
+                          <ArrowUp size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === data.gallery.length - 1}
+                          onClick={() => {
+                            if (idx === data.gallery.length - 1) return;
+                            const updated = [...data.gallery];
+                            const temp = updated[idx];
+                            updated[idx] = updated[idx + 1];
+                            updated[idx + 1] = temp;
+                            setData({ ...data, gallery: updated });
+                          }}
+                          title="Move photo later in gallery"
+                          style={{
+                            background: "#f1f5f9",
+                            border: "none",
+                            borderRadius: "4px",
+                            width: "24px",
+                            height: "24px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: idx === data.gallery.length - 1 ? "default" : "pointer",
+                            opacity: idx === data.gallery.length - 1 ? 0.4 : 1,
+                          }}
+                        >
+                          <ArrowDown size={12} />
+                        </button>
+                      </div>
+
+                      {/* Delete */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = data.gallery.filter((_, i) => i !== idx);
+                          setData({ ...data, gallery: updated });
+                        }}
+                        style={{
+                          background: "#fee2e2",
+                          border: "1px solid #fecaca",
+                          color: "#ef4444",
+                          borderRadius: "6px",
+                          padding: "0.3rem 0.65rem",
+                          fontSize: "0.72rem",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
+                        <Trash2 size={12} /> Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
