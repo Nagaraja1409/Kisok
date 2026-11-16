@@ -12,19 +12,24 @@ function extractArray(val: any): any[] {
   return [];
 }
 
-async function handleEvents(params: { asmay_id?: any; month?: any; MI_Id?: any; portalUrl?: string }) {
+async function handleEvents(params: { asmay_id?: any; month?: any; MI_Id?: any; MI_Subdomain?: string; portalUrl?: string }) {
   try {
-    const { asmay_id, month = 0, MI_Id, portalUrl } = params;
+    const { asmay_id, month = 0, MI_Id, MI_Subdomain, portalUrl } = params;
 
     const endpoint = portalUrl
       ? `${portalUrl.trim().replace(/\/+$/, "")}/api/COEFacade/getcoedata/`
       : VAPS_API_ENDPOINTS.STAFF_COE;
 
-    const payload = {
-      asmay_id: Number(asmay_id || 0),
+    const miSubdomain = (MI_Subdomain || VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "").trim();
+    const payload: any = {
+      asmay_id: Number(asmay_id || VAPS_API_ENDPOINTS.DEFAULT_ASMAY_ID || 0),
       month: Number(month || 0),
-      MI_Id: Number(MI_Id || 31),
+      MI_Id: Number(MI_Id || VAPS_API_ENDPOINTS.DEFAULT_MI_ID || 0),
     };
+    if (miSubdomain) {
+      payload.MI_Subdomain = miSubdomain;
+      payload.mI_Subdomain = miSubdomain;
+    }
 
     console.log("[Staff Events/COE API] Calling:", endpoint, payload);
 
@@ -90,9 +95,10 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
-  const asmay_id = searchParams.get("asmay_id") || searchParams.get("asmayId") || "0";
+  const asmay_id = searchParams.get("asmay_id") || searchParams.get("asmayId") || VAPS_API_ENDPOINTS.DEFAULT_ASMAY_ID || "0";
   const month = searchParams.get("month") || "0";
-  const MI_Id = searchParams.get("MI_Id") || searchParams.get("miId") || "31";
+  const MI_Id = searchParams.get("MI_Id") || searchParams.get("miId") || VAPS_API_ENDPOINTS.DEFAULT_MI_ID || "";
+  const MI_Subdomain = searchParams.get("MI_Subdomain") || searchParams.get("mi_subdomain") || VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "";
   const portalUrl = searchParams.get("portalUrl") || "";
-  return handleEvents({ asmay_id, month, MI_Id, portalUrl });
+  return handleEvents({ asmay_id, month, MI_Id, MI_Subdomain, portalUrl });
 }

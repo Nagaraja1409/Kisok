@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { getUserSession } from "@/lib/session";
+import { getUserSession, getInstituteLogo, getInstituteName } from "@/lib/session";
 import {
   Calendar,
   GraduationCap,
@@ -59,7 +59,7 @@ export const LEADERSHIP_MEMBERS = [
     id: "director",
     name: "Keshav Kumar",
     designation: "Director",
-    image: "/mvps/leadership/director_keshav_kumar.jpg",
+    image: "/mvps/ eadership/director_keshav_kumar.jpg",
     quotePreview: "A child is neither genius nor dumb by birth; it is education and environment that decide destiny. We leave no stone unturned to inculcate true values.",
     fullQuote: "A child is neither genius nor dumb by birth, it is education and environment that decide the destiny of a child. The Management, Principal, Parents and Students play a vital role in the progress of educational institute. It is our constant endeavor to improve quality education by every means.\n\nThe collective dream which we have cherished a decade ago has come true to provide opportunity to the children in and around this locality for all round development. I am assured that the school team will leave no stone unturned to inculcate values depicted in our vision and mission besides making the child a world citizen of repute.\n\nExpecting your cooperation and assuring the same to you.",
   },
@@ -267,7 +267,8 @@ export default function CampusInfoPortal({
   const [galleryCategoryFilter, setGalleryCategoryFilter] = useState<string>("all");
   const [activeTourFacilityIndex, setActiveTourFacilityIndex] = useState(0);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string>("stem");
-  const [schoolName, setSchoolName] = useState<string>("Madhuvan Vatika - MVPS");
+  const [schoolName, setSchoolName] = useState<string>(() => getInstituteName());
+  const [schoolLogo, setSchoolLogo] = useState<string>(() => getInstituteLogo());
   const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -312,8 +313,43 @@ export default function CampusInfoPortal({
       setSchoolName(session.initname);
       document.title = `${session.initname} • Smart Campus Kiosk`;
     } else {
-      document.title = "Madhuvan Vatika - MVPS • Smart Campus Kiosk";
+      document.title = `${getInstituteName()} • Smart Campus Kiosk`;
     }
+
+    const dynamicLogo = session?.initlogo || getInstituteLogo();
+    if (dynamicLogo) {
+      setSchoolLogo(dynamicLogo);
+    }
+
+    // Live branding sync from server config (reads INST_CODE_BGIMAGE from env)
+    fetch("/api/branding")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const currentSession = getUserSession();
+        if (!currentSession?.initlogo || currentSession.initlogo === "/mvps/brand/logo.png") {
+          if (data.logo) {
+            setSchoolLogo(data.logo);
+            try {
+              localStorage.setItem("kiosk_institute_logo", data.logo);
+            } catch { }
+          }
+        }
+        if (
+          !currentSession?.initname ||
+          currentSession.initname.includes("Madhuvan") ||
+          currentSession.initname.includes("Green Valley")
+        ) {
+          if (data.name) {
+            setSchoolName(data.name);
+            document.title = `${data.name} • Smart Campus Kiosk`;
+            try {
+              localStorage.setItem("kiosk_institute_name", data.name);
+            } catch { }
+          }
+        }
+      })
+      .catch(() => { });
 
     setInternalTime(new Date());
     const timer = setInterval(() => setInternalTime(new Date()), 1000);
@@ -371,16 +407,24 @@ export default function CampusInfoPortal({
         {/* Brand Group */}
         <div className="mv-brand-group">
           <img
-            src="/mvps/brand/logo.png"
+            src={schoolLogo}
             alt={`${schoolName} Official Crest`}
             className="mv-brand-logo-img"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = "/mvps/brand/logo.png";
+            }}
           />
           <div className="mv-brand-titles">
             <h1 className="mv-brand-name">{schoolName}</h1>
             <div className="mv-brand-sub">
               <span>Learn • Grow • Excel</span>
-              <span>•</span>
-              <span>CBSE Affiliated Sr. Sec. (1930281)</span>
+              {schoolName.includes("MVPS") && (
+                <>
+                  <span>•</span>
+                  <span>CBSE Affiliated Sr. Sec. (1930281)</span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -394,7 +438,7 @@ export default function CampusInfoPortal({
           <div className="mv-news-scroller">
             <div className="mv-news-track">
               <span className="mv-news-sep">|</span>
-              <span>Madhuvan Vatika scholars achieve 100% first-class CBSE Board distinction</span>
+              <span>{schoolName} scholars achieve 100% first-class distinction</span>
               <span className="mv-news-sep">|</span>
               <span>Admissions Open for Academic Session 2026-27 • Nursery to Grade XII</span>
               <span className="mv-news-sep">|</span>
@@ -532,7 +576,7 @@ export default function CampusInfoPortal({
                   <Award size={13} style={{ color: "#facc15" }} />
                   <span>Leadership &amp; Vision</span>
                 </button>
-                <span className="mv-creed-author">— Madhuvan Vatika Legacy</span>
+                <span className="mv-creed-author">— {schoolName} Legacy</span>
               </div>
             </div>
           </div>
@@ -1736,7 +1780,7 @@ export default function CampusInfoPortal({
                     {selectedLeader ? selectedLeader.name : "Institutional Leadership & Vision"}
                   </h3>
                   <span style={{ fontSize: "0.72rem", color: "rgba(255, 255, 255, 0.82)", fontWeight: 600 }}>
-                    {selectedLeader ? selectedLeader.designation : "Madhuvan Vatika Public School • Guiding Philosophies"}
+                    {selectedLeader ? selectedLeader.designation : `${schoolName} • Guiding Philosophies`}
                   </span>
                 </div>
               </div>
@@ -1859,7 +1903,7 @@ export default function CampusInfoPortal({
                         }}
                       >
                         <span style={{ fontSize: "0.8rem", color: "#64748b", fontStyle: "italic" }}>
-                          — Madhuvan Vatika Public School Leadership Desk
+                          — {schoolName} Leadership Desk
                         </span>
                         <button
                           onClick={() => setSelectedLeader(null)}
@@ -1884,7 +1928,7 @@ export default function CampusInfoPortal({
                 /* GRID OF 4 LEADERS */
                 <div>
                   <p style={{ margin: "0 0 14px", fontSize: "0.84rem", color: "#64748b", fontWeight: 600 }}>
-                    Tap any leadership card to read their complete vision and message for Madhuvan Vatika scholars:
+                    Tap any leadership card to read their complete vision and message for {schoolName} scholars:
                   </p>
                   <div
                     style={{

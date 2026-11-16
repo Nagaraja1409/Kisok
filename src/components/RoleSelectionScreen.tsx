@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { RoleType } from "./LoginScreen";
 import MarkdownResponse from "./chat/MarkdownResponse";
+import { getInstituteLogo, getInstituteName, getUserSession, getAiAssistantName, getInstituteCode } from "@/lib/session";
 
 export interface RoleSelectionScreenProps {
   onSelectRole: (role: RoleType) => void;
@@ -295,7 +296,7 @@ const roles: RoleDefinition[] = [
     eyebrow: "STAY CONNECTED",
     title: "Alumni / Ex-Staff",
     badge: "Heritage Network",
-    description: "Keep the spirit of Madhuvan Vatika alive through chapters, mentoring and shared milestones.",
+    description: "Keep the alumni spirit alive through chapters, mentoring and shared milestones.",
     image: "/alumni_avatar.png",
     accent: "#d97706",
     soft: "#fffbeb",
@@ -321,6 +322,50 @@ export default function RoleSelectionScreen({
   onOpenBot,
 }: RoleSelectionScreenProps) {
   const [activeRole, setActiveRole] = useState<RoleDefinition | null>(null);
+  const [schoolLogo, setSchoolLogo] = useState<string>(() => getInstituteLogo());
+  const [schoolName, setSchoolName] = useState<string>(() => getInstituteName());
+  const [aiName, setAiName] = useState<string>(() => getAiAssistantName());
+
+  useEffect(() => {
+    fetch("/api/branding")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        if (data.aiName) {
+          setAiName(data.aiName);
+        } else if (data.code) {
+          setAiName(`${data.code} AI`);
+        }
+        if (data.code) {
+          try {
+            localStorage.setItem("kiosk_institute_code", data.code);
+          } catch {}
+        }
+        const currentSession = getUserSession();
+        if (!currentSession?.initlogo || currentSession.initlogo === "/mvps/brand/logo.png") {
+          if (data.logo) {
+            setSchoolLogo(data.logo);
+            try {
+              localStorage.setItem("kiosk_institute_logo", data.logo);
+            } catch {}
+          }
+        }
+        if (
+          !currentSession?.initname ||
+          currentSession.initname.includes("Madhuvan") ||
+          currentSession.initname.includes("Green Valley")
+        ) {
+          if (data.name) {
+            setSchoolName(data.name);
+            document.title = `${data.name} • Smart Campus Kiosk`;
+            try {
+              localStorage.setItem("kiosk_institute_name", data.name);
+            } catch {}
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Background Slideshow State
   const [slideIndex, setSlideIndex] = useState(0);
@@ -332,14 +377,14 @@ export default function RoleSelectionScreen({
   const [galleryFilter, setGalleryFilter] = useState<"all" | "sports" | "academics" | "events" | "campus">("all");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  // MVP AI Assistant State
+  // Campus AI Assistant State
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [aiInput, setAiInput] = useState("");
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [aiMessages, setAiMessages] = useState<Array<{ sender: "user" | "bot"; text: string; time: string }>>([
     {
       sender: "bot",
-      text: "👋 Hello! I am **MVP AI**, the smart campus assistant for **Madhuvan Vatika Public School (MVPS)**.\n\nAsk me anything about **2026-27 Admissions**, **Fee Structure**, **Sports & Extracurricular Facilities**, or **Campus Timings**!",
+      text: `👋 Hello! I am **${getAiAssistantName()}**, the campus assistant for **${getInstituteName()}**.\n\nAsk me anything about **Admissions**, **Fee Structure**, **Facilities**, or **Campus Timings**!`,
       time: "Just now",
     },
   ]);
@@ -430,7 +475,7 @@ export default function RoleSelectionScreen({
       const data = await res.json();
       const reply =
         data.answer ||
-        "Thank you for reaching out! For direct admissions assistance, please contact the MVPS helpdesk at admissions@mvps.edu.in or visit Counter 104 in Block A.";
+        `Thank you for reaching out! For admissions assistance, please contact the ${schoolName || "campus"} helpdesk or visit Counter 104 in the administration block.`;
       setAiMessages((prev) => [
         ...prev,
         {
@@ -444,7 +489,7 @@ export default function RoleSelectionScreen({
         ...prev,
         {
           sender: "bot",
-          text: "⚠️ MVP AI assistant is temporarily reconnecting. Please check with the campus reception desk in Block A.",
+          text: `⚠️ ${aiName} is temporarily reconnecting. Please check with the campus reception desk in Block A.`,
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
@@ -506,16 +551,20 @@ export default function RoleSelectionScreen({
             </button>
             <div className="command-mark" aria-hidden="true" suppressHydrationWarning>
               <img
-                src="/mvps/brand/logo.png"
-                alt="Madhuvan Vatika Logo"
+                src={schoolLogo}
+                alt={`${schoolName} Logo`}
                 style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = "/mvps/brand/logo.png";
+                }}
               />
             </div>
             <div>
-              <p className="command-kicker">MADHUVAN VATIKA • SMART CAMPUS</p>
+              <p className="command-kicker">{schoolName.toUpperCase()} • SMART CAMPUS</p>
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
                 <h1 style={{ margin: 0, fontSize: "1.35rem", fontWeight: 800, color: "#1e293b", letterSpacing: "-0.03em" }}>
-                  Madhuvan Vatika - MVPS
+                  {schoolName}
                 </h1>
                 <span
                   style={{
@@ -585,7 +634,7 @@ export default function RoleSelectionScreen({
               <span>Institutional Gateway • Session 2026-27</span>
             </div>
             <h2>
-              Welcome to <span>Madhuvan Vatika</span> Public School
+              Welcome to <span>{schoolName}</span>
             </h2>
             <p>
               Please touch your designation or purpose below to access your dedicated terminal.
@@ -736,7 +785,7 @@ export default function RoleSelectionScreen({
 
           <button className="assistant-button" onClick={handleBotButtonClick}>
             <span className="assistant-pulse" />
-            <span>Need help? <b>Ask MVP AI</b></span>
+            <span>Need help? <b>Ask {aiName}</b></span>
           </button>
         </footer>
       </div>
@@ -858,7 +907,7 @@ export default function RoleSelectionScreen({
                     </a>
                   </div>
                   <p style={{ margin: 0, fontSize: "0.78rem", color: "#64748b" }}>
-                    Madhuvan Vatika Public School • Village Asmanpur, PO Nurpur Bedi, Ropar
+                    {schoolName} • Smart Campus Kiosk
                   </p>
                 </div>
               </div>
@@ -1287,7 +1336,7 @@ export default function RoleSelectionScreen({
         </div>
       )}
 
-      {/* MVP AI Campus Assistant Modal */}
+      {/* Campus AI Assistant Modal */}
       {isAiModalOpen && (
         <div
           className="portal-modal-backdrop"
@@ -1327,14 +1376,18 @@ export default function RoleSelectionScreen({
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                 <img
-                  src="/mvps/brand/logo.png"
-                  alt="Madhuvan Vatika Logo"
+                  src={schoolLogo}
+                  alt={`${schoolName} Logo`}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = "/mvps/brand/logo.png";
+                  }}
                   style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 10, background: "rgba(255, 255, 255, 0.9)", backdropFilter: "blur(6px)", padding: 2, border: "1px solid rgba(234, 88, 12, 0.25)" }}
                 />
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                     <h3 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.1rem", fontWeight: 800, color: "#1e293b" }}>
-                      MVP AI Campus Assistant
+                      {aiName} Campus Assistant
                     </h3>
                     <span
                       style={{
@@ -1350,7 +1403,7 @@ export default function RoleSelectionScreen({
                     </span>
                   </div>
                   <p style={{ margin: 0, fontSize: "0.74rem", color: "#64748b" }}>
-                    Madhuvan Vatika Public School • Instant Admissions, Fees &amp; Campus Guidance
+                    {schoolName} • Instant Admissions, Fees &amp; Campus Guidance
                   </p>
                 </div>
               </div>
@@ -1424,7 +1477,7 @@ export default function RoleSelectionScreen({
               {isAiTyping && (
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#ea580c", fontSize: "0.8rem", fontWeight: 600 }}>
                   <RefreshCw size={14} className="animate-spin" />
-                  <span>MVP AI is typing an answer...</span>
+                  <span>{aiName} is typing an answer...</span>
                 </div>
               )}
               <div ref={chatEndRef} />
@@ -1488,7 +1541,7 @@ export default function RoleSelectionScreen({
             >
               <input
                 type="text"
-                placeholder="Ask MVP AI about admissions, fee structure, timetable, or school policies..."
+                placeholder={`Ask ${aiName} about admissions, fee structure, timetable, or school policies...`}
                 value={aiInput}
                 onChange={(e) => setAiInput(e.target.value)}
                 style={{

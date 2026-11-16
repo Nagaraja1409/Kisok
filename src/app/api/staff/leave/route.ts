@@ -12,9 +12,9 @@ function extractArray(val: any): any[] {
   return [];
 }
 
-async function handleLeave(params: { emp_id?: any; MI_Id?: any; fromDate?: string; toDate?: string; leaveUrl?: string }) {
+async function handleLeave(params: { emp_id?: any; MI_Id?: any; MI_Subdomain?: string; fromDate?: string; toDate?: string; leaveUrl?: string }) {
   try {
-    const { emp_id, MI_Id, fromDate, toDate, leaveUrl } = params;
+    const { emp_id, MI_Id, MI_Subdomain, fromDate, toDate, leaveUrl } = params;
 
     const endpoint = leaveUrl
       ? `${leaveUrl.trim().replace(/\/+$/, "")}/api/LeaveReportFacade/get_report/`
@@ -24,13 +24,18 @@ async function handleLeave(params: { emp_id?: any; MI_Id?: any; fromDate?: strin
     const startOfYear = new Date(now.getFullYear(), 0, 1).toISOString();
     const endOfYear = new Date(now.getFullYear(), 11, 31).toISOString();
 
-    const payload = {
-      MI_Id: Number(MI_Id || 31),
+    const miSubdomain = (MI_Subdomain || VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "").trim();
+    const payload: any = {
+      MI_Id: Number(MI_Id || VAPS_API_ENDPOINTS.DEFAULT_MI_ID || 0),
       selectedEmployee: Number(emp_id || 0),
       HRELTD_FromDate: fromDate || startOfYear,
       HRELT_ToDate: toDate || endOfYear,
       selectedLeave: 1,
     };
+    if (miSubdomain) {
+      payload.MI_Subdomain = miSubdomain;
+      payload.mI_Subdomain = miSubdomain;
+    }
 
     console.log("[Staff Leave API] Calling:", endpoint, payload);
 
@@ -152,9 +157,10 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const emp_id = searchParams.get("emp_id") || searchParams.get("empId") || "0";
-  const MI_Id = searchParams.get("MI_Id") || searchParams.get("miId") || "31";
+  const MI_Id = searchParams.get("MI_Id") || searchParams.get("miId") || VAPS_API_ENDPOINTS.DEFAULT_MI_ID || "";
+  const MI_Subdomain = searchParams.get("MI_Subdomain") || searchParams.get("mi_subdomain") || VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "";
   const fromDate = searchParams.get("fromDate") || "";
   const toDate = searchParams.get("toDate") || "";
   const leaveUrl = searchParams.get("leaveUrl") || "";
-  return handleLeave({ emp_id, MI_Id, fromDate, toDate, leaveUrl });
+  return handleLeave({ emp_id, MI_Id, MI_Subdomain, fromDate, toDate, leaveUrl });
 }

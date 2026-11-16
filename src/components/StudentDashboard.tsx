@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import MarkdownResponse from "@/components/chat/MarkdownResponse";
-import { getUserSession, clearUserSession } from "@/lib/session";
+import { getUserSession, clearUserSession, getInstituteLogo, getInstituteName, getAiAssistantName } from "@/lib/session";
 import { SessionInfo } from "@/types/auth";
 import { CLIENT_API_ENDPOINTS } from "@/config/api";
 import {
@@ -77,7 +77,7 @@ const STUDENT_MOTTOES = [
   },
   {
     quote: "Excellence is not an act, but a daily habit. Keep learning every single day!",
-    author: "Madhuvan Vatika Academic Creed",
+    author: "Campus Academic Creed",
     badge: "Excellence",
   },
   {
@@ -211,7 +211,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
     {
       id: "msg-welcome",
       sender: "bot",
-      text: "👋 Hello! I am **MVP AI**, your Madhuvan Vatika Student & Parent Kiosk Assistant. Ask me anything about your attendance, exam results, timetable, homework diary, or fees!",
+      text: `👋 Hello! I am **${getAiAssistantName()}**, your Student & Parent Kiosk Assistant. Ask me anything about your attendance, exam results, timetable, homework diary, or fees!`,
       time: "Just now",
       suggestions: [
         "What is my attendance rate?",
@@ -279,7 +279,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           amst_id: s.AMST_ID || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
           roleid: s.RoleId || 3,
         }),
       });
@@ -288,6 +289,11 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
         const detailsList = toSafeArray(result.data?.studentDetails);
         if (result.success && detailsList.length > 0) {
           const detail = detailsList[0];
+          const dynamicAsmay = Number(detail.ASMAY_Id || detail.asmaY_Id || 0);
+          if (dynamicAsmay > 0 && dynamicAsmay !== s.ASMAY_Id) {
+            s.ASMAY_Id = dynamicAsmay;
+            sessionStorage.setItem("ASMAY_Id", String(dynamicAsmay));
+          }
           setStudentDetails({
             name: detail.AMST_FirstName || s.name || s.studentname || s.username || "",
             admNo: detail.AMST_AdmNo || (s.AMST_ID ? String(s.AMST_ID) : ""),
@@ -347,7 +353,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           amst_id: s.AMST_ID || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
           type: "overall",
         }),
       });
@@ -388,7 +395,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           amst_id: s.AMST_ID || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
           roleid: s.RoleId || 3,
         }),
       });
@@ -430,7 +438,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           amst_id: s.AMST_ID || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
           month: monthNum,
         }),
       });
@@ -471,7 +480,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           amst_id: s.AMST_ID || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
           flag: "O",
         }),
       });
@@ -511,7 +521,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           amst_id: s.AMST_ID || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
           roleid: s.RoleId || 3,
         }),
       });
@@ -552,7 +563,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           amst_id: s.AMST_ID || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
         }),
       });
       if (res.ok) {
@@ -594,7 +606,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
           body: JSON.stringify({
             asmay_id: s.ASMAY_Id || 0,
             amst_id: s.AMST_ID || 0,
-            MI_Id: s.miid || 31,
+            MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+            MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
             type: mode,
             examId: examId,
             subjectId: subjectId,
@@ -654,7 +667,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
           body: JSON.stringify({
             asmay_id: s.ASMAY_Id || 0,
             amst_id: s.AMST_ID || 0,
-            MI_Id: s.miid || 31,
+            MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+            MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
             type: mode,
             isms_id: subId,
             eme_id: exId,
@@ -803,7 +817,9 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
     [studentDetails.className, studentDetails.sectionName].filter(Boolean).join(" - ") ||
     [session?.asmcL_ClassName, session?.asms_sectionname].filter(Boolean).join(" - ") ||
     "Student Profile";
-  const schoolName = session?.initname || "Madhuvan Vatika - MVPS";
+  const schoolName = session?.initname || getInstituteName();
+  const schoolLogo = session?.initlogo || getInstituteLogo();
+  const aiName = getAiAssistantName();
 
   // Dynamic attendance metrics
   const totalWorkingDays = attendanceData.reduce((acc, a) => acc + a.classHeld, 0);
@@ -882,15 +898,24 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
       <div className="kiosk-orb kiosk-orb-two" />
 
       {/* TOP COMMAND NAVBAR (ROLE SELECTION COMMAND THEME) */}
-      <header className="dash-navbar">
-        <div className="command-brand" onClick={handleLogout} style={{ cursor: "pointer" }}>
+      <header className="dash-navbar" suppressHydrationWarning>
+        <div className="command-brand" onClick={handleLogout} style={{ cursor: "pointer" }} suppressHydrationWarning>
           <div className="command-mark" aria-hidden="true" suppressHydrationWarning>
-            <img src="/mvps/brand/logo.png" alt="Madhuvan Vatika Public School Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            <img
+              src={schoolLogo}
+              alt={`${schoolName} Logo`}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/mvps/brand/logo.png";
+              }}
+              suppressHydrationWarning
+            />
           </div>
-          <div>
-            <p className="command-kicker">MADHUVAN VATIKA • SMART CAMPUS</p>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }}>
-              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "#1e293b", whiteSpace: "nowrap" }}>
+          <div suppressHydrationWarning>
+            <p className="command-kicker" suppressHydrationWarning>{schoolName.toUpperCase()} • SMART CAMPUS</p>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }} suppressHydrationWarning>
+              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "#1e293b", whiteSpace: "nowrap" }} suppressHydrationWarning>
                 {schoolName}
               </h1>
               <span
@@ -1015,7 +1040,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
             { id: "homework" as StudentScreen, name: "Home-work", icon: BookOpen },
             { id: "timetable" as StudentScreen, name: "Time-Table", icon: Clock },
             { id: "exam-overall" as StudentScreen, name: "Over All Exam", icon: BarChart2 },
-            { id: "aispace" as StudentScreen, name: "MVP AI", icon: Sparkles },
+            { id: "aispace" as StudentScreen, name: aiName, icon: Sparkles },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = currentScreen === tab.id;
@@ -1202,17 +1227,17 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                 type="button"
                 onClick={() => setCurrentScreen("aispace")}
                 className="hero-ai-capsule-btn"
-                title="Launch Student MVP AI Space"
+                title={`Launch ${aiName} Space`}
               >
                 <div className="hero-ai-robo-wrap">
-                  <img src="/ai_robot.png" alt="MVP AI" className="hero-ai-robo-img" />
+                  <img src="/ai_robot.png" alt={aiName} className="hero-ai-robo-img" />
                   <span className="hero-ai-pulse-dot" />
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="hero-ai-kicker">
                     <Sparkles size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> AI SPACE
                   </div>
-                  <span className="hero-ai-action">Ask MVP AI →</span>
+                  <span className="hero-ai-action">Ask {aiName} →</span>
                 </div>
               </button>
             </div>
@@ -1452,10 +1477,10 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                   <span className="student-metric-val">
                     {examMarksData.length > 0
                       ? `${Math.round(
-                          (examMarksData.reduce((acc, m) => acc + m.obtainedMarks, 0) /
-                            Math.max(1, examMarksData.reduce((acc, m) => acc + m.maxMarks, 0))) *
-                            100
-                        )}%`
+                        (examMarksData.reduce((acc, m) => acc + m.obtainedMarks, 0) /
+                          Math.max(1, examMarksData.reduce((acc, m) => acc + m.maxMarks, 0))) *
+                        100
+                      )}%`
                       : "—"}
                   </span>
                   <span className="student-metric-label">Assessment Average</span>
@@ -1936,7 +1961,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                   boxShadow: "0 2px 6px rgba(234, 88, 12, 0.25)",
                 }}
               >
-                <Sparkles size={13} /> Ask MVP AI →
+                <Sparkles size={13} /> Ask {aiName} →
               </button>
             </div>
           </section>
@@ -2233,15 +2258,15 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
               >
                 {examMode === "EWAS"
                   ? examsList.map((ex) => (
-                      <option key={ex.id} value={ex.id}>
-                        {ex.name}
-                      </option>
-                    ))
+                    <option key={ex.id} value={ex.id}>
+                      {ex.name}
+                    </option>
+                  ))
                   : subjectsList.map((sub) => (
-                      <option key={sub.id} value={sub.id}>
-                        {sub.name}
-                      </option>
-                    ))}
+                    <option key={sub.id} value={sub.id}>
+                      {sub.name}
+                    </option>
+                  ))}
               </select>
 
               <button
@@ -2286,10 +2311,10 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                   <h4>
                     {examMarksData.length > 0 && examMarksData.reduce((acc, m) => acc + m.maxMarks, 0) > 0
                       ? `${Math.round(
-                          (examMarksData.reduce((acc, m) => acc + m.obtainedMarks, 0) /
-                            examMarksData.reduce((acc, m) => acc + m.maxMarks, 0)) *
-                            100
-                        )}%`
+                        (examMarksData.reduce((acc, m) => acc + m.obtainedMarks, 0) /
+                          examMarksData.reduce((acc, m) => acc + m.maxMarks, 0)) *
+                        100
+                      )}%`
                       : "—"}
                   </h4>
                 </div>
@@ -3410,15 +3435,15 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
               >
                 {overallMode === "SubOVERALL"
                   ? overallSubjects.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))
                   : overallExams.map((ex) => (
-                      <option key={ex.id} value={ex.id}>
-                        {ex.name}
-                      </option>
-                    ))}
+                    <option key={ex.id} value={ex.id}>
+                      {ex.name}
+                    </option>
+                  ))}
               </select>
 
               <button
@@ -3561,7 +3586,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                 <Sparkles size={20} />
               </div>
               <div>
-                <h2>MVP AI • Student &amp; Parent AI Assistant</h2>
+                <h2>{aiName} • Student &amp; Parent AI Assistant</h2>
                 <p>Instant answers on attendance, exam scorecards, timetable, and school notices</p>
               </div>
             </div>
@@ -3656,7 +3681,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                 {isTyping && (
                   <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#ea580c", fontSize: "0.75rem", fontWeight: 600 }}>
                     <RefreshCw size={13} className="animate-spin" />
-                    <span>MVP AI is typing an answer...</span>
+                    <span>{aiName} is typing an answer...</span>
                   </div>
                 )}
                 <div ref={chatMessagesEndRef} />
@@ -3689,7 +3714,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                 <input
                   type="text"
                   className="ai-chat-text-input"
-                  placeholder="Ask MVP AI about attendance, report card marks, timetable, or fees..."
+                  placeholder={`Ask ${aiName} about attendance, report card marks, timetable, or fees...`}
                   value={chatInputText}
                   disabled={isTyping}
                   onChange={(e) => setChatInputText(e.target.value)}
@@ -3703,7 +3728,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                   className="ai-chat-send-btn"
                   onClick={() => handleSendChatMessage()}
                   disabled={isTyping}
-                  title="Send message to MVP AI"
+                  title={`Send message to ${aiName}`}
                 >
                   <Send size={15} />
                 </button>

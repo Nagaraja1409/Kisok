@@ -1,7 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import VisitorDashboard from "@/components/VisitorDashboard";
+
+const VisitorDashboard = dynamic(() => import("@/components/VisitorDashboard"), {
+  ssr: false,
+});
 
 export default function VisitorPage() {
   const router = useRouter();

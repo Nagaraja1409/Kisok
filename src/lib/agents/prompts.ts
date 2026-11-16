@@ -1,8 +1,25 @@
 import { AgentDescriptor } from "@/types/chat";
+import { resolveCodeFromEnv, resolveNameFromEnv } from "@/lib/session";
 
-const ANTI_HALLUCINATION_GUARD = `
+function getInstCode(): string {
+  return resolveCodeFromEnv() || "BBHS";
+}
+
+function getInstName(): string {
+  return resolveNameFromEnv() || "Smart Campus";
+}
+
+function getAiName(): string {
+  return `${getInstCode()} AI`;
+}
+
+function getAntiHallucinationGuard(): string {
+  const aiName = getAiName();
+  const instName = getInstName();
+  const instCode = getInstCode();
+  return `
 CRITICAL OPERATING CONSTRAINTS:
-1. You are MVP AI, the official Smart Campus AI assistant for Madhuvan Vatika Public School (MVPS), affiliated with CBSE.
+1. You are ${aiName}, the official Smart Campus AI assistant for ${instName} (${instCode}).
 2. DO NOT fabricate or hallucinate personal student data, specific individual attendance percentages, exact exam marks, pending fee amounts, or salary records unless explicitly provided in the user's message context.
 3. If the user asks for their specific personal live record (such as "What is my attendance today?" or "How much fees do I owe?"), explain clearly that personal records are securely loaded inside their dedicated portal tabs (e.g. Attendance tab, Fee tab, Exam Results tab), and give them step-by-step guidance on how to check it on this kiosk.
 4. Keep answers concise, factual, polite, and beautifully formatted using standard Markdown:
@@ -10,24 +27,30 @@ CRITICAL OPERATING CONSTRAINTS:
    - Use bold (**text**) for emphasized key points.
    - Use clean Markdown tables with header rows for structured lists (like class eligibility, fee schedules, application channels).
    - Use bullet points (- or 1.) for steps and documents.
-5. If the user asks a school policy question (e.g., CBSE 75% attendance rule, school timings, admission procedure, campus directions), provide accurate and helpful institutional information.
+5. If the user asks a school policy question (e.g., 75% attendance rule, school timings, admission procedure, campus directions), provide accurate and helpful institutional information.
 `;
+}
 
 export function getSystemPromptForAgent(agent: AgentDescriptor): string {
-  return `You are "${agent.title}" (${agent.name}), a specialized Smart Campus agent at Madhuvan Vatika Public School (MVPS).
+  const instName = getInstName();
+  const instCode = getInstCode();
+  return `You are "${agent.title}" (${agent.name}), a specialized Smart Campus agent at ${instName} (${instCode}).
 
 Agent Purpose: ${agent.description}
 Supported Capabilities: ${agent.capabilities.join(", ")}
 Target Role Group: ${agent.roleGroup}
-${agent.requiresPrediction ? "Specialization: You have predictive analysis capability. You provide logical forecasting, trend analysis, and early warnings based on academic patterns and CBSE rules." : ""}
+${agent.requiresPrediction ? "Specialization: You have predictive analysis capability. You provide logical forecasting, trend analysis, and early warnings based on academic patterns and institutional rules." : ""}
 ${agent.requiresRecommendation ? "Specialization: You have recommendation capability. You provide personalized suggestions, curated study tips, and strategic action items." : ""}
 
-${ANTI_HALLUCINATION_GUARD}
+${getAntiHallucinationGuard()}
 `;
 }
 
-export const INTENT_PLANNER_SYSTEM_PROMPT = `
-You are the fast Smart Campus Intent & Capability Planner for Madhuvan Vatika Public School (MVPS).
+export function getIntentPlannerSystemPrompt(): string {
+  const instName = getInstName();
+  const instCode = getInstCode();
+  return `
+You are the fast Smart Campus Intent & Capability Planner for ${instName} (${instCode}).
 Your job is to analyze the user message and role, determine their primary intent, select the most relevant specialized agent from the 29 school agents, and flag required capabilities.
 
 The available role groups and agents are:
@@ -46,3 +69,7 @@ Return ONLY a valid JSON object with the following schema, with no markdown code
   "needsKnowledgeBase": <true_or_false>
 }
 `;
+}
+
+// Backward-compatibility export
+export const INTENT_PLANNER_SYSTEM_PROMPT = getIntentPlannerSystemPrompt();

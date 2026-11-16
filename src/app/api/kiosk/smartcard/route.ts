@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { VAPS_API_ENDPOINTS } from "@/config/api";
 import { SessionInfo } from "@/types/auth";
 
-async function handleSmartcard(cardNumber: string, MI_ID: string | number = 31) {
+async function handleSmartcard(cardNumber: string, MI_ID: string | number = VAPS_API_ENDPOINTS.DEFAULT_MI_ID || 0) {
   try {
     const trimmedCard = (cardNumber || "").trim();
     if (!trimmedCard) {
@@ -19,11 +19,15 @@ async function handleSmartcard(cardNumber: string, MI_ID: string | number = 31) 
 
     const numericId = parseInt(trimmedCard.replace(/\D/g, ""), 10) || 1024;
 
-    const payload = {
-      MI_ID: String(MI_ID),
+    const payload: any = {
+      MI_ID: String(MI_ID || VAPS_API_ENDPOINTS.DEFAULT_MI_ID),
       Amst_Id: isStudent || !isEmployee ? numericId : 0,
       Emp_Id: isEmployee ? numericId : 0,
     };
+    if (VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN) {
+      payload.MI_Subdomain = VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN;
+      payload.mI_Subdomain = VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN;
+    }
 
     console.log("[SmartCard Punch API] Calling:", VAPS_API_ENDPOINTS.SMARTCARD_PUNCH, payload);
 
@@ -51,17 +55,18 @@ async function handleSmartcard(cardNumber: string, MI_ID: string | number = 31) 
       username: rawData?.UserName || rawData?.userName || (isEmployee ? `EMP-${numericId}` : `ADM-${numericId}`),
       name: rawData?.UserName || (isEmployee ? "Faculty Member" : "Student User"),
       studentname: isEmployee ? undefined : (rawData?.UserName || "Student User"),
-      ASMAY_Year: rawData?.ASMAY_Year || "2025-2026",
-      ASMAY_Id: Number(rawData?.ASMAY_Id || 31),
+      ASMAY_Year: rawData?.ASMAY_Year || process.env.LOGIN_ASMAY_YEAR || VAPS_API_ENDPOINTS.DEFAULT_ASMAY_YEAR || "",
+      ASMAY_Id: Number(rawData?.ASMAY_Id || rawData?.asmaY_Id || process.env.LOGIN_ASMAY_ID || VAPS_API_ENDPOINTS.DEFAULT_ASMAY_ID || 0),
       AMST_ID: isEmployee ? 0 : Number(rawData?.AMST_Id || numericId),
       Empid: isEmployee ? Number(rawData?.emp_Id || numericId) : 0,
       UserId: Number(rawData?.userId || numericId),
       RoleId: Number(rawData?.roleId || (isEmployee ? 2 : 3)),
       Rolename: role,
       roleforlogin: role,
-      initname: rawData?.instituteName || "Madhuvan Vatika - MVPS",
+      initname: rawData?.instituteName,
       initlogo: rawData?.instituteLogo || "",
-      miid: Number(MI_ID || 31),
+      MI_Subdomain: VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
+      miid: Number(MI_ID || VAPS_API_ENDPOINTS.DEFAULT_MI_ID),
       img: rawData?.img || "",
       loginTime: new Date().toISOString(),
       rawResponse: rawData,
@@ -86,13 +91,13 @@ async function handleSmartcard(cardNumber: string, MI_ID: string | number = 31) 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const cardNumber = body.cardNumber || body.cardId || body.card || "";
-  const MI_ID = body.MI_ID || body.miId || 31;
+  const MI_ID = body.MI_ID || body.miId || VAPS_API_ENDPOINTS.DEFAULT_MI_ID;
   return handleSmartcard(cardNumber, MI_ID);
 }
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const cardNumber = searchParams.get("cardNumber") || searchParams.get("card") || "";
-  const MI_ID = searchParams.get("MI_ID") || searchParams.get("miId") || 31;
+  const MI_ID = searchParams.get("MI_ID") || searchParams.get("miId") || VAPS_API_ENDPOINTS.DEFAULT_MI_ID;
   return handleSmartcard(cardNumber, MI_ID);
 }

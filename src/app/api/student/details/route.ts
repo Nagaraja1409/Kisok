@@ -28,13 +28,18 @@ export async function POST(req: NextRequest) {
       ? `${portalUrl.trim().replace(/\/+$/, "")}/api/StudentDashboardFacade/Getdetails/`
       : VAPS_API_ENDPOINTS.STUDENT_DETAILS;
 
-    const payload = {
-      asmay_id: Number(asmay_id || 0),
+    const miSubdomain = (body.MI_Subdomain || body.mI_Subdomain || VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "").trim();
+    const payload: any = {
+      asmay_id: Number(asmay_id || VAPS_API_ENDPOINTS.DEFAULT_ASMAY_ID || 0),
       empid: Number(empid || 0),
       amst_id: Number(amst_id || 0),
-      MI_Id: Number(MI_Id || 31),
+      MI_Id: Number(MI_Id || VAPS_API_ENDPOINTS.DEFAULT_MI_ID || 0),
       roleid: Number(roleid || 3),
     };
+    if (miSubdomain) {
+      payload.MI_Subdomain = miSubdomain;
+      payload.mI_Subdomain = miSubdomain;
+    }
 
     console.log("[Details API] Calling:", endpoint, payload);
 
