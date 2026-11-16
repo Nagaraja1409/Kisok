@@ -262,6 +262,7 @@ export default function CampusInfoPortal({
   const [internalIsFullscreen, setInternalIsFullscreen] = useState(false);
   const [portalData, setPortalData] = useState<CampusInfoData | null>(draftData || null);
   const [virtualTourOpen, setVirtualTourOpen] = useState(false);
+  const [tourViewMode, setTourViewMode] = useState<"video" | "facilities">("video");
   const [galleryModalOpen, setGalleryModalOpen] = useState(false);
   const [selectedGalleryIndex, setSelectedGalleryIndex] = useState<number | null>(null);
   const [selectedGalleryImg, setSelectedGalleryImg] = useState<{ src: string; title: string } | null>(null);
@@ -409,6 +410,7 @@ export default function CampusInfoPortal({
 
   const activeLeadership = (draftData?.leadership || portalData?.leadership || LEADERSHIP_MEMBERS).filter((m) => m.active !== false);
   const activeFacilities = (draftData?.facilities || portalData?.facilities || TOUR_FACILITIES).filter((f) => f.active !== false);
+  const tour360VideoUrl = draftData?.branding?.virtualTour360Url || draftData?.virtualTour360Url || portalData?.branding?.virtualTour360Url || portalData?.virtualTour360Url || "/campus_promo.mp4";
   const activeGallery = draftData?.gallery || portalData?.gallery || CAMPUS_GALLERY_ITEMS;
   const activeEvents = draftData?.events || portalData?.events || [
     {
@@ -562,12 +564,41 @@ export default function CampusInfoPortal({
           <div className="mv-news-scroller">
             <div className="mv-news-track">
               {activeTicker && activeTicker.length > 0 ? (
-                activeTicker.map((notice, nIdx) => (
-                  <React.Fragment key={nIdx}>
-                    <span className="mv-news-sep">|</span>
-                    <span>{notice}</span>
-                  </React.Fragment>
-                ))
+                activeTicker.map((notice, nIdx) => {
+                  const isObj = typeof notice === "object" && notice !== null;
+                  const text = isObj ? (notice as any).text : notice;
+                  const badge = isObj ? (notice as any).badge : undefined;
+                  const priority = isObj ? (notice as any).priority : "normal";
+
+                  return (
+                    <React.Fragment key={nIdx}>
+                      <span className="mv-news-sep">|</span>
+                      <span
+                        style={{
+                          fontWeight: priority === "urgent" ? 800 : priority === "high" ? 700 : 500,
+                          color: priority === "urgent" ? "#ef4444" : priority === "high" ? "#ea580c" : "inherit",
+                        }}
+                      >
+                        {badge && (
+                          <span
+                            style={{
+                              background: priority === "urgent" ? "#fee2e2" : priority === "high" ? "#ffedd5" : "#e0f2fe",
+                              color: priority === "urgent" ? "#dc2626" : priority === "high" ? "#c2410c" : "#0284c7",
+                              padding: "1px 6px",
+                              borderRadius: "4px",
+                              fontSize: "0.72rem",
+                              marginRight: "6px",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {badge}
+                          </span>
+                        )}
+                        {text}
+                      </span>
+                    </React.Fragment>
+                  );
+                })
               ) : (
                 <>
                   <span className="mv-news-sep">|</span>
@@ -950,72 +981,28 @@ export default function CampusInfoPortal({
             </div>
 
             <div className="mv-fac-mini-grid">
-              <div
-                className="mv-fac-mini-item"
-                onClick={() => { setActiveTourFacilityIndex(1); setVirtualTourOpen(true); }}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { setActiveTourFacilityIndex(1); setVirtualTourOpen(true); } }}
-                role="button"
-                tabIndex={0}
-                title="Explore Modern Classrooms"
-              >
-                <img src="/mvps/facilities/classrooms_01.jpg" alt="Classrooms" className="mv-fac-mini-img" />
-                <span className="mv-fac-mini-title">Classrooms</span>
-              </div>
-              <div
-                className="mv-fac-mini-item"
-                onClick={() => { setActiveTourFacilityIndex(2); setVirtualTourOpen(true); }}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { setActiveTourFacilityIndex(2); setVirtualTourOpen(true); } }}
-                role="button"
-                tabIndex={0}
-                title="Explore AI & STEM Labs"
-              >
-                <img src="/mvps/facilities/labs.jpg" alt="STEM Labs" className="mv-fac-mini-img" />
-                <span className="mv-fac-mini-title">AI &amp; Labs</span>
-              </div>
-              <div
-                className="mv-fac-mini-item"
-                onClick={() => { setActiveTourFacilityIndex(3); setVirtualTourOpen(true); }}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { setActiveTourFacilityIndex(3); setVirtualTourOpen(true); } }}
-                role="button"
-                tabIndex={0}
-                title="Explore Central Library"
-              >
-                <img src="/mvps/facilities/library_01.jpg" alt="Library" className="mv-fac-mini-img" />
-                <span className="mv-fac-mini-title">Library</span>
-              </div>
-              <div
-                className="mv-fac-mini-item"
-                onClick={() => { setActiveTourFacilityIndex(4); setVirtualTourOpen(true); }}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { setActiveTourFacilityIndex(4); setVirtualTourOpen(true); } }}
-                role="button"
-                tabIndex={0}
-                title="Explore Sports Turf & Athletic Arenas"
-              >
-                <img src="/mvps/facilities/sports_01.jpg" alt="Sports Arena" className="mv-fac-mini-img" />
-                <span className="mv-fac-mini-title">Sports Turf</span>
-              </div>
-              <div
-                className="mv-fac-mini-item"
-                onClick={() => { setActiveTourFacilityIndex(5); setVirtualTourOpen(true); }}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { setActiveTourFacilityIndex(5); setVirtualTourOpen(true); } }}
-                role="button"
-                tabIndex={0}
-                title="Explore GPS-Enabled Bus Fleet"
-              >
-                <img src="/mvps/facilities/transport_buses.jpg" alt="Bus Fleet" className="mv-fac-mini-img" />
-                <span className="mv-fac-mini-title">Bus Fleet</span>
-              </div>
-              <div
-                className="mv-fac-mini-item"
-                onClick={() => { setActiveTourFacilityIndex(6); setVirtualTourOpen(true); }}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { setActiveTourFacilityIndex(6); setVirtualTourOpen(true); } }}
-                role="button"
-                tabIndex={0}
-                title="Explore Kindergarten Play Area"
-              >
-                <img src="/mvps/facilities/playarea_01.jpg" alt="Playground" className="mv-fac-mini-img" />
-                <span className="mv-fac-mini-title">Play Area</span>
-              </div>
+              {activeFacilities.slice(0, 6).map((fac, fIdx) => (
+                <div
+                  key={fac.id || fIdx}
+                  className="mv-fac-mini-item"
+                  onClick={() => {
+                    setActiveTourFacilityIndex(fIdx);
+                    setVirtualTourOpen(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      setActiveTourFacilityIndex(fIdx);
+                      setVirtualTourOpen(true);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  title={`Explore ${fac.title}`}
+                >
+                  <img src={fac.image} alt={fac.title} className="mv-fac-mini-img" />
+                  <span className="mv-fac-mini-title">{fac.title}</span>
+                </div>
+              ))}
             </div>
 
             <div className="mv-creed-ribbon">
@@ -1121,124 +1108,230 @@ export default function CampusInfoPortal({
             </div>
 
             <div style={{ padding: "1.1rem", background: "#f8fafc" }}>
-              {/* Facility Tabs Bar */}
-              <div className="mv-tour-tabs-bar" style={{ marginBottom: "12px" }}>
-                {activeFacilities.map((facility, idx) => (
-                  <button
-                    key={facility.id}
-                    className={`mv-tour-tab-btn ${activeTourFacilityIndex === idx ? "active" : ""}`}
-                    onClick={() => setActiveTourFacilityIndex(idx)}
-                  >
-                    <span>{facility.title}</span>
-                  </button>
-                ))}
+              {/* Tour Mode Switcher (360 Video Walkthrough vs Facility Explorer) */}
+              <div style={{ display: "flex", gap: "8px", marginBottom: "12px", borderBottom: "1px solid #e2e8f0", paddingBottom: "10px" }}>
+                <button
+                  onClick={() => setTourViewMode("video")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "0.45rem 1rem",
+                    borderRadius: "8px",
+                    border: "none",
+                    background: tourViewMode === "video" ? "#ea580c" : "#ffffff",
+                    color: tourViewMode === "video" ? "#ffffff" : "#475569",
+                    fontWeight: 700,
+                    fontSize: "0.8rem",
+                    cursor: "pointer",
+                    boxShadow: tourViewMode === "video" ? "0 2px 8px rgba(234, 88, 12, 0.35)" : "0 1px 3px rgba(0, 0, 0, 0.05)",
+                  }}
+                >
+                  <Play size={13} fill={tourViewMode === "video" ? "#ffffff" : "#ea580c"} />
+                  <span>🎥 360° Walkthrough Video</span>
+                </button>
+                <button
+                  onClick={() => setTourViewMode("facilities")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "0.45rem 1rem",
+                    borderRadius: "8px",
+                    border: "none",
+                    background: tourViewMode === "facilities" ? "#ea580c" : "#ffffff",
+                    color: tourViewMode === "facilities" ? "#ffffff" : "#475569",
+                    fontWeight: 700,
+                    fontSize: "0.8rem",
+                    cursor: "pointer",
+                    boxShadow: tourViewMode === "facilities" ? "0 2px 8px rgba(234, 88, 12, 0.35)" : "0 1px 3px rgba(0, 0, 0, 0.05)",
+                  }}
+                >
+                  <Building2 size={13} />
+                  <span>🏛️ Campus Facilities Explorer ({activeFacilities.length})</span>
+                </button>
               </div>
 
-              {/* Active Facility View */}
-              {activeFacilities[activeTourFacilityIndex] && (
+              {tourViewMode === "video" ? (
+                /* 360 Video Player View */
                 <div
                   style={{
                     position: "relative",
                     borderRadius: "14px",
                     overflow: "hidden",
                     boxShadow: "0 8px 24px rgba(15, 23, 42, 0.12)",
-                    height: "380px",
+                    height: "400px",
                     background: "#0f172a",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
-                  <img
-                    src={activeFacilities[activeTourFacilityIndex].image}
-                    alt={activeFacilities[activeTourFacilityIndex].title}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
+                  {tour360VideoUrl.includes("youtube.com") || tour360VideoUrl.includes("youtu.be") ? (
+                    <iframe
+                      src={tour360VideoUrl.replace("watch?v=", "embed/")}
+                      title="School 360 Campus Tour"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      style={{ width: "100%", height: "100%", border: "none" }}
+                    />
+                  ) : (
+                    <video
+                      key={tour360VideoUrl}
+                      src={tour360VideoUrl}
+                      controls
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  )}
                   <div
                     style={{
                       position: "absolute",
-                      inset: 0,
-                      background: "linear-gradient(180deg, transparent 40%, rgba(14, 42, 71, 0.90) 100%)",
+                      top: "12px",
+                      left: "14px",
+                      background: "rgba(0, 0, 0, 0.65)",
+                      backdropFilter: "blur(4px)",
+                      color: "#fff",
+                      padding: "4px 10px",
+                      borderRadius: "6px",
+                      fontSize: "0.74rem",
+                      fontWeight: 800,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "5px",
                       pointerEvents: "none",
                     }}
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: "16px",
-                      left: "20px",
-                      right: "20px",
-                      color: "#ffffff",
-                    }}
                   >
-                    <span
-                      style={{
-                        background: "rgba(234, 88, 12, 0.95)",
-                        padding: "3px 10px",
-                        borderRadius: "9999px",
-                        fontSize: "0.72rem",
-                        fontWeight: 800,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.04em",
-                      }}
-                    >
-                      {activeFacilities[activeTourFacilityIndex].category}
-                    </span>
-                    <h4 style={{ margin: "6px 0 3px", fontSize: "1.2rem", fontWeight: 800 }}>
-                      {activeFacilities[activeTourFacilityIndex].title}
-                    </h4>
-                    <p style={{ margin: 0, fontSize: "0.82rem", opacity: 0.92, lineHeight: 1.4, maxWidth: "700px" }}>
-                      {activeFacilities[activeTourFacilityIndex].description}
-                    </p>
+                    <Play size={11} fill="#ea580c" />
+                    <span>School 360° Walkthrough Video Asset</span>
                   </div>
                 </div>
-              )}
+              ) : (
+                /* Campus Facilities Architecture View */
+                <>
+                  {/* Facility Tabs Bar */}
+                  <div className="mv-tour-tabs-bar" style={{ marginBottom: "12px" }}>
+                    {activeFacilities.map((facility, idx) => (
+                      <button
+                        key={facility.id}
+                        className={`mv-tour-tab-btn ${activeTourFacilityIndex === idx ? "active" : ""}`}
+                        onClick={() => setActiveTourFacilityIndex(idx)}
+                      >
+                        <span>{facility.title}</span>
+                      </button>
+                    ))}
+                  </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginTop: "0.85rem",
-                }}
-              >
-                <div style={{ fontSize: "0.8rem", color: "#475569", fontWeight: 600 }}>
-                  📍 Village Asmanpur, PO Nurpur Bedi, Ropar • Facility {activeTourFacilityIndex + 1} of {TOUR_FACILITIES.length}
-                </div>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <button
-                    onClick={() => setActiveTourFacilityIndex((prev) => (prev - 1 + TOUR_FACILITIES.length) % TOUR_FACILITIES.length)}
+                  {/* Active Facility View */}
+                  {activeFacilities[activeTourFacilityIndex] && (
+                    <div
+                      style={{
+                        position: "relative",
+                        borderRadius: "14px",
+                        overflow: "hidden",
+                        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.12)",
+                        height: "380px",
+                        background: "#0f172a",
+                      }}
+                    >
+                      <img
+                        src={activeFacilities[activeTourFacilityIndex].image}
+                        alt={activeFacilities[activeTourFacilityIndex].title}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          background: "linear-gradient(180deg, transparent 40%, rgba(14, 42, 71, 0.90) 100%)",
+                          pointerEvents: "none",
+                        }}
+                      />
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: "16px",
+                          left: "20px",
+                          right: "20px",
+                          color: "#ffffff",
+                        }}
+                      >
+                        <span
+                          style={{
+                            background: "rgba(234, 88, 12, 0.95)",
+                            padding: "3px 10px",
+                            borderRadius: "9999px",
+                            fontSize: "0.72rem",
+                            fontWeight: 800,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.04em",
+                          }}
+                        >
+                          {activeFacilities[activeTourFacilityIndex].category}
+                        </span>
+                        <h4 style={{ margin: "6px 0 3px", fontSize: "1.2rem", fontWeight: 800 }}>
+                          {activeFacilities[activeTourFacilityIndex].title}
+                        </h4>
+                        <p style={{ margin: 0, fontSize: "0.82rem", opacity: 0.92, lineHeight: 1.4, maxWidth: "700px" }}>
+                          {activeFacilities[activeTourFacilityIndex].description}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div
                     style={{
-                      background: "#ffffff",
-                      border: "1.5px solid #cbd5e1",
-                      borderRadius: "9999px",
-                      padding: "0.35rem 0.9rem",
-                      fontWeight: 700,
-                      fontSize: "0.78rem",
-                      cursor: "pointer",
-                      color: "#334155",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginTop: "0.85rem",
                     }}
                   >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() => setActiveTourFacilityIndex((prev) => (prev + 1) % activeFacilities.length)}
-                    style={{
-                      background: "#ea580c",
-                      color: "#ffffff",
-                      border: "none",
-                      borderRadius: "9999px",
-                      padding: "0.35rem 1rem",
-                      fontWeight: 700,
-                      fontSize: "0.78rem",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Next Facility
-                  </button>
-                </div>
-              </div>
+                    <div style={{ fontSize: "0.8rem", color: "#475569", fontWeight: 600 }}>
+                      📍 Village Asmanpur, PO Nurpur Bedi, Ropar • Facility {activeTourFacilityIndex + 1} of {TOUR_FACILITIES.length}
+                    </div>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button
+                        onClick={() => setActiveTourFacilityIndex((prev) => (prev - 1 + TOUR_FACILITIES.length) % TOUR_FACILITIES.length)}
+                        style={{
+                          background: "#ffffff",
+                          border: "1.5px solid #cbd5e1",
+                          borderRadius: "9999px",
+                          padding: "0.35rem 0.9rem",
+                          fontWeight: 700,
+                          fontSize: "0.78rem",
+                          cursor: "pointer",
+                          color: "#334155",
+                        }}
+                      >
+                        Previous
+                      </button>
+                      <button
+                        onClick={() => setActiveTourFacilityIndex((prev) => (prev + 1) % activeFacilities.length)}
+                        style={{
+                          background: "#ea580c",
+                          color: "#ffffff",
+                          border: "none",
+                          borderRadius: "9999px",
+                          padding: "0.35rem 1rem",
+                          fontWeight: 700,
+                          fontSize: "0.78rem",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Next Facility
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

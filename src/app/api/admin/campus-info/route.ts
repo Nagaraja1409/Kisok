@@ -5,6 +5,26 @@ import { CampusInfoData } from "@/types/campus";
 
 export const dynamic = "force-dynamic";
 
+function syncEnvFile(fileName: string, updates: Record<string, string>) {
+  try {
+    const envPath = path.join(process.cwd(), fileName);
+    if (!fs.existsSync(envPath)) return;
+    let content = fs.readFileSync(envPath, "utf-8");
+    for (const [key, val] of Object.entries(updates)) {
+      if (!val) continue;
+      const regex = new RegExp(`^(\\s*${key}\\s*=).*$`, "m");
+      if (regex.test(content)) {
+        content = content.replace(regex, `${key}="${val.replace(/"/g, '\\"')}"`);
+      } else {
+        content += `\n${key}="${val.replace(/"/g, '\\"')}"\n`;
+      }
+    }
+    fs.writeFileSync(envPath, content, "utf-8");
+  } catch (err) {
+    console.warn(`[API /api/admin/campus-info] Could not sync ${fileName}:`, err);
+  }
+}
+
 export async function GET() {
   try {
     const dataFilePath = path.join(process.cwd(), "src", "data", "campus_info.json");
@@ -45,6 +65,25 @@ export async function POST(req: NextRequest) {
     }
 
     fs.writeFileSync(dataFilePath, JSON.stringify(payload, null, 2), "utf-8");
+
+    // Automatically synchronize institution variables into .env and .env.local
+    const envUpdates: Record<string, string> = {};
+    if (payload.branding.instituteName) {
+      envUpdates["NEXT_PUBLIC_INSTITUTE_NAME"] = payload.branding.instituteName;
+    }
+    if (payload.branding.logo) {
+      envUpdates["NEXT_PUBLIC_INSTITUTE_LOGO"] = payload.branding.logo;
+      envUpdates["INST_CODE_BGIMAGE"] = payload.branding.logo;
+    }
+    if (payload.branding.shortCode) {
+      envUpdates["NEXT_PUBLIC_INST_CODE"] = payload.branding.shortCode;
+      envUpdates["INST_CODE"] = payload.branding.shortCode;
+    }
+
+    if (Object.keys(envUpdates).length > 0) {
+      syncEnvFile(".env", envUpdates);
+      syncEnvFile(".env.local", envUpdates);
+    }
 
     return NextResponse.json({
       success: true,

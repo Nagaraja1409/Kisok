@@ -1,10 +1,20 @@
+export interface CampusLiveNotice {
+  id: string;
+  text: string;
+  badge?: string;
+  priority?: "normal" | "high" | "urgent";
+  date?: string;
+}
+
 export interface CampusBranding {
   instituteName: string;
   shortCode: string;
   logo: string;
   motto: string;
   affiliation: string;
-  tickerNotices: string[];
+  tickerNotices: (string | CampusLiveNotice)[];
+  virtualTour360Url?: string;
+  virtualTourTitle?: string;
 }
 
 export interface HeroConfig {
@@ -88,10 +98,12 @@ export interface CampusInfoData {
   branding: CampusBranding;
   hero: HeroConfig;
   quickStats: QuickStats;
+  stats?: QuickStats;
   leadership: LeadershipMember[];
   facilities: TourFacility[];
   gallery: GalleryItem[];
   events: CampusEvent[];
   achievements: CampusAchievement[];
   footerMotto?: string;
+  virtualTour360Url?: string;
 }

@@ -31,7 +31,7 @@ export default function KioskLivePreviewModal({
   onPublish,
   isPublishing = false,
 }: KioskLivePreviewModalProps) {
-  const [deviceMode, setDeviceMode] = useState<DeviceMode>("landscape");
+  const [deviceMode, setDeviceMode] = useState<DeviceMode>("responsive");
   const [reloadKey, setReloadKey] = useState(0);
 
   if (!isOpen) return null;
@@ -100,47 +100,6 @@ export default function KioskLivePreviewModal({
               border: "1px solid rgba(255, 255, 255, 0.12)",
             }}
           >
-            <button
-              onClick={() => setDeviceMode("landscape")}
-              title="16:9 Kiosk Display (Touch Terminal)"
-              style={{
-                background: deviceMode === "landscape" ? "#ea580c" : "transparent",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "6px",
-                padding: "0.35rem 0.7rem",
-                fontSize: "0.75rem",
-                fontWeight: 700,
-                display: "flex",
-                alignItems: "center",
-                gap: "5px",
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-            >
-              <Monitor size={14} /> 16:9 Landscape
-            </button>
-
-            <button
-              onClick={() => setDeviceMode("portrait")}
-              title="9:16 Portrait Touch Totem"
-              style={{
-                background: deviceMode === "portrait" ? "#ea580c" : "transparent",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "6px",
-                padding: "0.35rem 0.7rem",
-                fontSize: "0.75rem",
-                fontWeight: 700,
-                display: "flex",
-                alignItems: "center",
-                gap: "5px",
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-            >
-              <Smartphone size={14} /> Portrait Totem
-            </button>
 
             <button
               onClick={() => setDeviceMode("responsive")}
@@ -247,14 +206,14 @@ export default function KioskLivePreviewModal({
               deviceMode === "landscape"
                 ? "min(1366px, 96vw)"
                 : deviceMode === "portrait"
-                ? "540px"
-                : "100%",
+                  ? "540px"
+                  : "100%",
             height:
               deviceMode === "landscape"
                 ? "min(768px, calc(100vh - 120px))"
                 : deviceMode === "portrait"
-                ? "min(960px, calc(100vh - 120px))"
-                : "100%",
+                  ? "min(960px, calc(100vh - 120px))"
+                  : "100%",
             background: "#081020",
             borderRadius: deviceMode === "responsive" ? "0" : "18px",
             overflow: "hidden",

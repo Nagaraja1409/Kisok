@@ -6,10 +6,27 @@
     "motto": "Empowering Minds, Shaping Futures",
     "affiliation": "CBSE Affiliation No. 1930281 | NAAC Grade A++",
     "tickerNotices": [
-      "Admissions open for Academic Session 2026-27 (Pre-Nursery to Class XI).",
-      "CBSE Term Examination date sheets published on student portal.",
-      "Annual Inter-School Athletics Championship begins Nov 20."
-    ]
+      {
+        "id": "notice-1",
+        "badge": "ADMISSION",
+        "text": "Admissions open for Academic Session 2026-27 (Pre-Nursery to Class XI).",
+        "priority": "high"
+      },
+      {
+        "id": "notice-2",
+        "badge": "CBSE ALERT",
+        "text": "CBSE Term Examination date sheets published on student portal.",
+        "priority": "urgent"
+      },
+      {
+        "id": "notice-3",
+        "badge": "SPORTS",
+        "text": "Annual Inter-School Athletics Championship begins Nov 20.",
+        "priority": "normal"
+      }
+    ],
+    "virtualTour360Url": "/campus_promo.mp4",
+    "virtualTourTitle": "360° Architecture & Campus Walkthrough"
   },
   "hero": {
     "videoUrl": "/Madhuvan_Vatika_Public_School_Full_Promo_20s.mp4",
@@ -73,9 +90,13 @@
       "id": "campus_front",
       "title": "Campus Façade & Main Pavilion",
       "category": "Campus Architecture",
-      "image": "/mvps/hero/banner_01.jpg",
+      "image": "/uploads/facilities/Screenshot_2026-11-12_191851_1794814489246.png",
       "description": "Grand institutional campus situated in Asmanpur, Nurpur Bedi with wide entrance atriums, manicured gardens, and full CCTV coverage.",
-      "highlights": ["15 Acres Green Campus", "24/7 CCTV Monitored", "Spacious Entrance Atrium"],
+      "highlights": [
+        "15 Acres Green Campus",
+        "24/7 CCTV Monitored",
+        "Spacious Entrance Atrium"
+      ],
       "order": 1,
       "active": true
     },
@@ -85,7 +106,11 @@
       "category": "Scholastic Space",
       "image": "/mvps/facilities/classrooms_01.jpg",
       "description": "Spacious, well-ventilated classrooms with ergonomic desks, interactive boards, and multimedia-enabled pedagogical aids.",
-      "highlights": ["Interactive Smart Boards", "Ergonomic Seating", "Air-Conditioned Environment"],
+      "highlights": [
+        "Interactive Smart Boards",
+        "Ergonomic Seating",
+        "Air-Conditioned Environment"
+      ],
       "order": 2,
       "active": true
     },
@@ -95,7 +120,11 @@
       "category": "Innovation Hub",
       "image": "/mvps/facilities/labs.jpg",
       "description": "Fully equipped Physics, Chemistry, Biology, and Robotics/AI workstations facilitating experiential research and discovery.",
-      "highlights": ["Advanced Robotics Kits", "Safety Goggles & Fume Hoods", "High-speed AI Workstations"],
+      "highlights": [
+        "Advanced Robotics Kits",
+        "Safety Goggles & Fume Hoods",
+        "High-speed AI Workstations"
+      ],
       "order": 3,
       "active": true
     },
@@ -105,7 +134,11 @@
       "category": "Resource Center",
       "image": "/mvps/facilities/library_01.jpg",
       "description": "Vast collection of curriculum texts, reference encyclopedias, national journals, and quiet individual reading nooks.",
-      "highlights": ["15,000+ Volume Library", "Digital E-Book Access", "Quiet Reading Zones"],
+      "highlights": [
+        "15,000+ Volume Library",
+        "Digital E-Book Access",
+        "Quiet Reading Zones"
+      ],
       "order": 4,
       "active": true
     },
@@ -115,7 +148,11 @@
       "category": "Athletics & Physical",
       "image": "/mvps/facilities/sports_01.jpg",
       "description": "Regulation volleyball courts, athletic running tracks, cricket pitches, and badminton arenas promoting fitness and teamwork.",
-      "highlights": ["Cricket Pavilion & Pitch", "Volleyball & Badminton Courts", "400m Olympic Track"],
+      "highlights": [
+        "Cricket Pavilion & Pitch",
+        "Volleyball & Badminton Courts",
+        "400m Olympic Track"
+      ],
       "order": 5,
       "active": true
     },
@@ -125,7 +162,11 @@
       "category": "Logistics & Safety",
       "image": "/mvps/facilities/transport_buses.jpg",
       "description": "Dedicated fleet of well-maintained school buses equipped with GPS tracking, first-aid, speed governors, and trained attendants.",
-      "highlights": ["Real-time GPS Tracking", "Speed Governors (<40km/h)", "Female Bus Attendants"],
+      "highlights": [
+        "Real-time GPS Tracking",
+        "Speed Governors (<40km/h)",
+        "Female Bus Attendants"
+      ],
       "order": 6,
       "active": true
     },
@@ -135,7 +176,11 @@
       "category": "Kindergarten & Play",
       "image": "/mvps/facilities/playarea_01.jpg",
       "description": "Lush green open lawns and safe recreational play structures fostering joyful peer social interaction and motor skill growth.",
-      "highlights": ["Child-Safe Soft Turf", "Rubberized Play Swings", "Shaded Rest Gazebos"],
+      "highlights": [
+        "Child-Safe Soft Turf",
+        "Rubberized Play Swings",
+        "Shaded Rest Gazebos"
+      ],
       "order": 7,
       "active": true
     }
