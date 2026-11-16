@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import MarkdownResponse from "@/components/chat/MarkdownResponse";
 import { getUserSession, clearUserSession, getInstituteLogo, getInstituteName, getAiAssistantName } from "@/lib/session";
 import { SessionInfo } from "@/types/auth";
+import PortalCmsManager from "@/components/admin/PortalCmsManager";
 import {
   ArrowLeft,
   ArrowRight,
@@ -55,7 +56,7 @@ interface DashboardProps {
   onBackToKiosk: () => void;
 }
 
-type ActiveScreen = "dashboard" | "attendance" | "finance" | "admissions" | "profile" | "aispace";
+type ActiveScreen = "dashboard" | "attendance" | "finance" | "admissions" | "profile" | "aispace" | "portal-cms";
 
 // Official Inspiring Slogans & Leadership Wisdom for Governance
 const ADMIN_SLOGANS = [
@@ -391,6 +392,21 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
           <button className="command-fullscreen" onClick={toggleFullscreen}>
             {isFullscreen ? <Minimize size={15} /> : <Maximize size={15} />}
             <span>{isFullscreen ? "Exit" : "Full screen"}</span>
+          </button>
+
+          {/* Portal CMS Manager Button */}
+          <button
+            className="dash-kiosk-back-btn"
+            onClick={() => setCurrentScreen("portal-cms")}
+            title="Open Campus Portal CMS Manager"
+            style={{
+              background: currentScreen === "portal-cms" ? "#ea580c" : "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+              color: "#ffffff",
+              border: "none",
+              fontWeight: 800,
+            }}
+          >
+            <Layers size={14} /> Portal CMS
           </button>
 
           {/* Back to Kiosk Home */}
@@ -1133,25 +1149,47 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
               </div>
             </div>
 
-            <button
-              onClick={() => setCurrentScreen("profile")}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.35rem",
-                padding: "0.35rem 0.85rem",
-                borderRadius: "8px",
-                border: "1px solid rgba(124, 58, 237, 0.35)",
-                background: "#f5f3ff",
-                color: "#7c3aed",
-                fontWeight: 800,
-                fontSize: "0.74rem",
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <User size={13} /> View Complete Administrator Profile Screen →
-            </button>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                onClick={() => setCurrentScreen("portal-cms")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  padding: "0.35rem 0.85rem",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(234, 88, 12, 0.4)",
+                  background: "#fff7ed",
+                  color: "#ea580c",
+                  fontWeight: 800,
+                  fontSize: "0.74rem",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <Building2 size={13} /> Manage /dashboard CMS →
+              </button>
+
+              <button
+                onClick={() => setCurrentScreen("profile")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  padding: "0.35rem 0.85rem",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(124, 58, 237, 0.35)",
+                  background: "#f5f3ff",
+                  color: "#7c3aed",
+                  fontWeight: 800,
+                  fontSize: "0.74rem",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <User size={13} /> Administrator Profile →
+              </button>
+            </div>
           </section>
         </main>
       )}
@@ -1919,6 +1957,31 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
               </div>
             </div>
           </div>
+        </section>
+      )}
+
+      {/* ========================================================
+          VIEW 7: DEDICATED FULL SCREEN — CAMPUS PORTAL CMS
+          ======================================================== */}
+      {currentScreen === "portal-cms" && (
+        <section className="student-fullscreen-page" style={{ overflowY: "auto", padding: "1.5rem" }}>
+          <div className="student-screen-subnav" style={{ marginBottom: "1rem" }}>
+            <button className="student-back-to-dash-btn" onClick={() => setCurrentScreen("dashboard")}>
+              <ArrowLeft size={16} /> Back to Dashboard
+            </button>
+
+            <div className="student-screen-title-area">
+              <div className="student-screen-icon-bubble" style={{ background: "#ffedd5", color: "#ea580c" }}>
+                <Building2 size={20} />
+              </div>
+              <div>
+                <h2>Campus Portal CMS</h2>
+                <p>Customize dynamic media, leadership statements, facilities, gallery, and schedule for /dashboard</p>
+              </div>
+            </div>
+          </div>
+
+          <PortalCmsManager />
         </section>
       )}
 
