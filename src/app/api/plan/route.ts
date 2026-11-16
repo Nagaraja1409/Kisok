@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { AgentName, LLMProvider, PlanResponse } from "@/types/chat";
 import { normalizeRole, validateChatMessage } from "@/lib/validation";
 import { AGENT_REGISTRY, resolveAgentFromMessage } from "@/lib/agents/registry";
-import { INTENT_PLANNER_SYSTEM_PROMPT } from "@/lib/agents/prompts";
+import { getIntentPlannerSystemPrompt } from "@/lib/agents/prompts";
 import { callGroqCompletion } from "@/lib/groq";
 import { requiresDeepReasoning } from "@/lib/llm";
 
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     // 4. Fast Groq model intent detection call
     const groqPlanRes = await callGroqCompletion({
       messages: [
-        { role: "system", content: INTENT_PLANNER_SYSTEM_PROMPT },
+        { role: "system", content: getIntentPlannerSystemPrompt() },
         {
           role: "user",
           content: `Role: ${roleGroup}\nMessage: "${validation.cleanMessage}"`,

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import MarkdownResponse from "@/components/chat/MarkdownResponse";
-import { getUserSession, clearUserSession } from "@/lib/session";
+import { getUserSession, clearUserSession, getInstituteLogo, getInstituteName, getAiAssistantName } from "@/lib/session";
 import { SessionInfo } from "@/types/auth";
 import {
   Calendar,
@@ -668,7 +668,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
     {
       id: "msg-welcome",
       sender: "bot",
-      text: "👋 Welcome back, Rohan! I am **MVP AI**, your Madhuvan Vatika Alumni Assistant. Ask me anything about alumni meets, reunions, ordering transcripts, scheduling campus visits, or career mentorship opportunities.",
+      text: `👋 Welcome back! I am **${getAiAssistantName()}**, your ${getInstituteName()} Alumni Assistant. Ask me anything about alumni meets, reunions, ordering transcripts, scheduling campus visits, or career mentorship opportunities.`,
       time: "Just now",
     },
   ]);
@@ -931,6 +931,10 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
     setMessageText("");
   };
 
+  const schoolName = session?.initname || getInstituteName();
+  const schoolLogo = session?.initlogo || getInstituteLogo();
+  const aiName = getAiAssistantName();
+
   return (
     <div className="dashboard-page">
       {/* FLOATING AMBIENT ORBS (MATCHING EXACT STUDENT & STAFF THEME) */}
@@ -938,14 +942,23 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
       <div className="kiosk-orb kiosk-orb-two" />
 
       {/* TOP COMMAND NAVBAR (EXACT REPLICA OF STUDENT & STAFF DASHBOARDS) */}
-      <header className="dash-navbar">
-        <div className="command-brand" onClick={handleLogout} style={{ cursor: "pointer" }}>
+      <header className="dash-navbar" suppressHydrationWarning>
+        <div className="command-brand" onClick={handleLogout} style={{ cursor: "pointer" }} suppressHydrationWarning>
           <div className="command-mark" aria-hidden="true" suppressHydrationWarning>
-            <img src="/mvps/brand/logo.png" alt="Madhuvan Vatika Public School Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            <img
+              src={schoolLogo}
+              alt={`${schoolName} Logo`}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/mvps/brand/logo.png";
+              }}
+              suppressHydrationWarning
+            />
           </div>
-          <div>
-            <p className="command-kicker">MADHUVAN VATIKA • SMART CAMPUS</p>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }}>
+          <div suppressHydrationWarning>
+            <p className="command-kicker" suppressHydrationWarning>{schoolName.toUpperCase()} • SMART CAMPUS</p>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }} suppressHydrationWarning>
               <h1
                 style={{
                   margin: 0,
@@ -955,8 +968,9 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                   color: "#1e293b",
                   whiteSpace: "nowrap",
                 }}
+                suppressHydrationWarning
               >
-                Madhuvan Vatika - MVPS
+                {schoolName}
               </h1>
               <span
                 style={{
@@ -1077,7 +1091,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
             { id: "visit" as AlumniScreen, name: "Plan a Visit", icon: MapPin },
             { id: "jobs" as AlumniScreen, name: "Job Board", icon: Briefcase },
             { id: "giveback" as AlumniScreen, name: "Give Back", icon: Heart },
-            { id: "aispace" as AlumniScreen, name: "MVP AI", icon: Sparkles },
+            { id: "aispace" as AlumniScreen, name: aiName, icon: Sparkles },
             { id: "gallery" as AlumniScreen, name: "Photo Gallery", icon: ImageIcon },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -1278,17 +1292,17 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                 type="button"
                 onClick={() => setCurrentScreen("aispace")}
                 className="hero-ai-capsule-btn"
-                title="Launch Alumni MVP AI Space"
+                title={`Launch ${aiName} Space`}
               >
                 <div className="hero-ai-robo-wrap">
-                  <img src="/ai_robot.png" alt="MVP AI" className="hero-ai-robo-img" />
+                  <img src="/ai_robot.png" alt={aiName} className="hero-ai-robo-img" />
                   <span className="hero-ai-pulse-dot" />
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="hero-ai-kicker">
                     <Sparkles size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> AI SPACE
                   </div>
-                  <span className="hero-ai-action">Ask MVP AI →</span>
+                  <span className="hero-ai-action">Ask {aiName} →</span>
                 </div>
               </button>
             </div>
@@ -1875,7 +1889,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                   </div>
                 </div>
                 <div>
-                  <div className="alumni-tile-title">MVP AI</div>
+                  <div className="alumni-tile-title">{aiName}</div>
                   <div className="alumni-tile-sub">Instant guidance</div>
                 </div>
               </div>
@@ -2093,7 +2107,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                         gap: "5px",
                       }}
                     >
-                      MVP AI Assistant <Sparkles size={13} style={{ color: "#facc15" }} />
+                      {aiName} Assistant <Sparkles size={13} style={{ color: "#facc15" }} />
                     </h4>
                     <p style={{ margin: "2px 0 0", fontSize: "0.68rem", color: "#cbd5e1" }}>
                       Instant guidance on events, transcripts, visits & mentors.
@@ -2142,7 +2156,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                       marginBottom: "0.65rem",
                     }}
                   >
-                    <strong>MVP AI:</strong> {chatMessages[chatMessages.length - 1].text}
+                    <strong>{aiName}:</strong> {chatMessages[chatMessages.length - 1].text}
                   </div>
                 )}
 
@@ -2161,7 +2175,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                   <Mic size={14} style={{ color: "#94a3b8" }} />
                   <input
                     type="text"
-                    placeholder="Ask MVP AI anything..."
+                    placeholder={`Ask ${aiName} anything...`}
                     value={chatInput}
                     disabled={isAiTyping}
                     onChange={(e) => setChatInput(e.target.value)}
@@ -4167,7 +4181,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                 <Bot size={20} />
               </div>
               <div>
-                <h2>MVP AI Assistant (Alumni &amp; Legacy Space)</h2>
+                <h2>{aiName} Assistant (Alumni &amp; Legacy Space)</h2>
                 <p>Instant guidance on reunions, transcript verification, campus passes, and mentorship opportunities.</p>
               </div>
             </div>
@@ -4284,7 +4298,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                 {isAiTyping && (
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#ea580c", fontSize: "0.78rem", fontWeight: 600 }}>
                     <RefreshCw size={14} className="animate-spin" />
-                    <span>MVP AI is typing an answer...</span>
+                    <span>{aiName} is typing an answer...</span>
                   </div>
                 )}
                 <div ref={chatBottomRef} />
@@ -4327,7 +4341,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
               >
                 <input
                   type="text"
-                  placeholder="Type a question for MVP AI..."
+                  placeholder={`Type a question for ${aiName}...`}
                   value={chatInput}
                   disabled={isAiTyping}
                   onChange={(e) => setChatInput(e.target.value)}
@@ -4965,7 +4979,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
               }}
             >
               <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 900, fontFamily: "Outfit, sans-serif" }}>
-                MADHUVAN VATIKA - MVPS
+                {schoolName.toUpperCase()}
               </h3>
               <p style={{ margin: "2px 0 0", fontSize: "0.72rem", opacity: 0.9 }}>
                 Official Alumni Campus Security Entry Pass
@@ -5295,7 +5309,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
         }}
       >
         <div>
-          <span className="footer-dot" style={{ background: "#ea580c" }} /> Official Madhuvan Vatika - MVPS Alumni Command Portal
+          <span className="footer-dot" style={{ background: "#ea580c" }} /> Official {schoolName} Alumni Command Portal
         </div>
         <div className="footer-links">
           <span>CBSE Affiliation 1930281</span>

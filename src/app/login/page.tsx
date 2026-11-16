@@ -70,7 +70,7 @@ export default function LoginPage() {
             fontWeight: 700,
           }}
         >
-          Loading Madhuvan Vatika Portal Login...
+          Loading Login...
         </div>
       }
     >

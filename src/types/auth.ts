@@ -7,6 +7,7 @@ export interface LoginRequestPayload {
   username: string;
   password: string;
   mI_ID: string | number;
+  MI_Subdomain?: string;
   Logintype: string; // "KIOSK"
 }
 
@@ -20,6 +21,8 @@ export interface LoginResponseDTO {
   asmaY_Id?: number;
   role?: string | number;
   mI_ID?: number;
+  MI_Subdomain?: string;
+  mI_Subdomain?: string;
   pageId?: number;
   ivrmirP_AddFlag?: boolean | string;
   ivrmirP_UpdateFlag?: boolean | string;
@@ -41,8 +44,12 @@ export interface LoginResponseDTO {
   empcode?: number;
   MI_Idforlogin?: number;
   mI_Name?: string;
+  MI_Name?: string;
   mI_logo?: string;
-  fillinstition1?: any[];
+  mI_Logo?: string;
+  MI_Logo?: string;
+  fillinstition1?: any;
+  institutedetails?: any;
   loginlist?: any[];
   [key: string]: any;
 }
@@ -76,6 +83,8 @@ export interface SessionInfo {
   Empid: number;
   initname: string;
   initlogo: string;
+  instCode?: string;
+  MI_Subdomain?: string;
   miid: number;
   img: string;
   roleforlogin: string;

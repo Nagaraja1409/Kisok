@@ -17,7 +17,7 @@ async function handleSports(params: { MI_Id?: any; MO_Id?: any }) {
     const { MI_Id, MO_Id } = params;
 
     const payload = {
-      MI_Id: Number(MI_Id || 31),
+      MI_Id: Number(MI_Id || VAPS_API_ENDPOINTS.DEFAULT_MI_ID),
       MO_Id: Number(MO_Id || 2),
     };
 
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
-  const MI_Id = searchParams.get("MI_Id") || searchParams.get("miId") || "31";
+  const MI_Id = searchParams.get("MI_Id") || searchParams.get("miId") || VAPS_API_ENDPOINTS.DEFAULT_MI_ID;
   const MO_Id = searchParams.get("MO_Id") || searchParams.get("moId") || "2";
   return handleSports({ MI_Id, MO_Id });
 }

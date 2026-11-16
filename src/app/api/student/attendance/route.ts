@@ -24,9 +24,10 @@ export async function POST(req: NextRequest) {
       portalUrl,
     } = body;
 
-    let finalAsmayId = Number(asmay_id || 0);
-    const instId = Number(MI_Id || 31);
+    let finalAsmayId = Number(asmay_id || VAPS_API_ENDPOINTS.DEFAULT_ASMAY_ID || 0);
+    const instId = Number(MI_Id || VAPS_API_ENDPOINTS.DEFAULT_MI_ID || 0);
     const studentId = Number(amst_id || 0);
+    const miSubdomain = (body.MI_Subdomain || body.mI_Subdomain || VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "").trim();
 
     const endpoint = portalUrl
       ? `${portalUrl.trim().replace(/\/+$/, "")}/api/StudentDashboardFacade/Getdetails/`
@@ -35,16 +36,21 @@ export async function POST(req: NextRequest) {
     // Auto-resolve asmay_id if missing or 0
     if (finalAsmayId <= 0 && studentId > 0) {
       try {
+        const autoPayload: any = {
+          asmay_id: 0,
+          empid: 0,
+          amst_id: studentId,
+          MI_Id: instId,
+          roleid: 3,
+        };
+        if (miSubdomain) {
+          autoPayload.MI_Subdomain = miSubdomain;
+          autoPayload.mI_Subdomain = miSubdomain;
+        }
         const detRes = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            asmay_id: 0,
-            empid: 0,
-            amst_id: studentId,
-            MI_Id: instId,
-            roleid: 3,
-          }),
+          body: JSON.stringify(autoPayload),
           signal: AbortSignal.timeout(6000),
         });
         if (detRes.ok) {
@@ -59,13 +65,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const payload = {
+    const payload: any = {
       asmay_id: finalAsmayId,
       empid: Number(empid || 0),
       amst_id: studentId,
       MI_Id: instId,
       roleid: Number(roleid || 3),
     };
+    if (miSubdomain) {
+      payload.MI_Subdomain = miSubdomain;
+      payload.mI_Subdomain = miSubdomain;
+    }
 
     console.log("[Attendance API] Calling:", endpoint, payload);
 

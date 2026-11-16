@@ -12,19 +12,24 @@ function extractArray(val: any): any[] {
   return [];
 }
 
-async function handleDetails(params: { asmay_id?: any; userid?: any; MI_Id?: any; name?: string; userName?: string; empCode?: string; portalUrl?: string }) {
+async function handleDetails(params: { asmay_id?: any; userid?: any; MI_Id?: any; MI_Subdomain?: string; name?: string; userName?: string; empCode?: string; portalUrl?: string }) {
   try {
-    const { asmay_id, userid, MI_Id, name, userName, empCode, portalUrl } = params;
+    const { asmay_id, userid, MI_Id, MI_Subdomain, name, userName, empCode, portalUrl } = params;
 
     const endpoint = portalUrl
       ? `${portalUrl.trim().replace(/\/+$/, "")}/api/EmployeePtalFacade/getdata/`
       : VAPS_API_ENDPOINTS.EMPLOYEE_DETAILS;
 
-    const payload = {
-      asmayID: Number(asmay_id || 0),
+    const miSubdomain = (MI_Subdomain || VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "").trim();
+    const payload: any = {
+      asmayID: Number(asmay_id || VAPS_API_ENDPOINTS.DEFAULT_ASMAY_ID || 0),
       userid: Number(userid || 0),
-      MI_Id: Number(MI_Id || 31),
+      MI_Id: Number(MI_Id || VAPS_API_ENDPOINTS.DEFAULT_MI_ID || 0),
     };
+    if (miSubdomain) {
+      payload.MI_Subdomain = miSubdomain;
+      payload.mI_Subdomain = miSubdomain;
+    }
 
     console.log("[Staff Details API] Calling:", endpoint, payload);
 
@@ -122,12 +127,13 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
-  const asmay_id = searchParams.get("asmay_id") || searchParams.get("asmayId") || "0";
+  const asmay_id = searchParams.get("asmay_id") || searchParams.get("asmayId") || VAPS_API_ENDPOINTS.DEFAULT_ASMAY_ID || "0";
   const userid = searchParams.get("userid") || searchParams.get("empId") || "0";
-  const MI_Id = searchParams.get("MI_Id") || searchParams.get("miId") || "31";
+  const MI_Id = searchParams.get("MI_Id") || searchParams.get("miId") || VAPS_API_ENDPOINTS.DEFAULT_MI_ID || "";
+  const MI_Subdomain = searchParams.get("MI_Subdomain") || searchParams.get("mi_subdomain") || VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "";
   const name = searchParams.get("name") || "";
   const userName = searchParams.get("userName") || searchParams.get("username") || "";
   const empCode = searchParams.get("empCode") || "";
   const portalUrl = searchParams.get("portalUrl") || "";
-  return handleDetails({ asmay_id, userid, MI_Id, name, userName, empCode, portalUrl });
+  return handleDetails({ asmay_id, userid, MI_Id, MI_Subdomain, name, userName, empCode, portalUrl });
 }
