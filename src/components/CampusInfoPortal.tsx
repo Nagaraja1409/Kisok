@@ -29,6 +29,7 @@ import {
   QrCode,
   BookOpen,
   Cpu,
+  Lock,
 } from "lucide-react";
 
 export const LEADERSHIP_MEMBERS: LeadershipMember[] = [
@@ -1051,7 +1052,23 @@ export default function CampusInfoPortal({
         </div>
 
         <div className="mv-footer-links">
-          <span>Academics</span> | <span>Sports</span> | <span>Arts</span> | <span>Values</span> | <span>Life Skills</span>
+          <span>Academics</span> | <span>Sports</span> | <span>Arts</span> | <span>Values</span> | <span>Life Skills</span> |{" "}
+          <span
+            onClick={() => router.push("/admin")}
+            className="mv-footer-admin-link"
+            title="Access Admin Portal & CMS"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                router.push("/admin");
+              }
+            }}
+          >
+            <Lock size={12} style={{ display: "inline-block", verticalAlign: "middle", marginRight: "3px" }} />
+            Admin
+          </span>
         </div>
       </footer>
 
