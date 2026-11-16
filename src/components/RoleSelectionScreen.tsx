@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { RoleType } from "./LoginScreen";
 import MarkdownResponse from "./chat/MarkdownResponse";
-import { getInstituteLogo, getInstituteName, getUserSession, getAiAssistantName, getInstituteCode } from "@/lib/session";
+import { getInstituteLogo, getInstituteName, getUserSession, getAiAssistantName, getInstituteCode, getBackgroundLo } from "@/lib/session";
 
 export interface RoleSelectionScreenProps {
   onSelectRole: (role: RoleType) => void;
@@ -327,7 +327,7 @@ export default function RoleSelectionScreen({
   const [aiName, setAiName] = useState<string>(() => getAiAssistantName());
 
   useEffect(() => {
-    fetch("/api/branding")
+    fetch("/api/branding", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!data) return;
@@ -363,14 +363,21 @@ export default function RoleSelectionScreen({
             } catch {}
           }
         }
+        if (data.backgroupdlo) {
+          setCustomBgImage(data.backgroupdlo);
+          try {
+            sessionStorage.setItem("backgroupdlo", data.backgroupdlo);
+            localStorage.setItem("kiosk_backgroupdlo", data.backgroupdlo);
+          } catch {}
+        }
       })
       .catch(() => {});
   }, []);
 
-  // Background Slideshow State
+  // Background Slideshow State (Defaults to dynamic background image from env if configured)
   const [slideIndex, setSlideIndex] = useState(0);
   const [isSlideshowPlaying, setIsSlideshowPlaying] = useState(true);
-  const [customBgImage, setCustomBgImage] = useState<string | null>(null);
+  const [customBgImage, setCustomBgImage] = useState<string | null>(() => getBackgroundLo() || null);
 
   // Gallery Modal & Lightbox State
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);

@@ -322,7 +322,7 @@ export default function CampusInfoPortal({
     }
 
     // Live branding sync from server config (reads INST_CODE_BGIMAGE from env)
-    fetch("/api/branding")
+    fetch("/api/branding", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!data) return;
@@ -347,6 +347,12 @@ export default function CampusInfoPortal({
               localStorage.setItem("kiosk_institute_name", data.name);
             } catch { }
           }
+        }
+        if (data.backgroupdlo) {
+          try {
+            sessionStorage.setItem("backgroupdlo", data.backgroupdlo);
+            localStorage.setItem("kiosk_backgroupdlo", data.backgroupdlo);
+          } catch { }
         }
       })
       .catch(() => { });

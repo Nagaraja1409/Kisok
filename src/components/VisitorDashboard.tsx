@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import MarkdownResponse from "@/components/chat/MarkdownResponse";
-import { getInstituteLogo, getInstituteName, getAiAssistantName } from "@/lib/session";
+import { getInstituteLogo, getInstituteName, getAiAssistantName, getUserSession, getBackgroundLo } from "@/lib/session";
 import {
   ArrowLeft,
   ArrowRight,
@@ -269,6 +269,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
   const [currentScreen, setCurrentScreen] = useState<VisitorScreen>("dashboard");
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [bgImage, setBgImage] = useState<string>(() => getBackgroundLo());
 
   // Visitor Session from localStorage
   const [visitorSession, setVisitorSession] = useState<VisitorSession>({
@@ -297,7 +298,25 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
 
   // Load localStorage data safely
   useEffect(() => {
+    // 1. Fetch dynamic branding and background image strictly from environment (/api/branding)
+    fetch("/api/branding", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.backgroupdlo) {
+          setBgImage(data.backgroupdlo);
+          try {
+            sessionStorage.setItem("backgroupdlo", data.backgroupdlo);
+            localStorage.setItem("kiosk_backgroupdlo", data.backgroupdlo);
+          } catch { }
+        }
+      })
+      .catch(() => { });
+
     try {
+      const s = getUserSession();
+      if (s?.backgroupdlo) {
+        setBgImage(s.backgroupdlo);
+      }
       const stored = localStorage.getItem("gvps_visitor_session");
       if (stored) {
         const parsed = JSON.parse(stored) as VisitorSession;
@@ -389,15 +408,33 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
   const aiName = getAiAssistantName();
 
   return (
-    <div className="dashboard-page">
-      {/* Ambient background orbs matching Student/Staff software theme */}
-      <div className="kiosk-orb kiosk-orb-one" />
-      <div className="kiosk-orb kiosk-orb-two" />
+    <div className={`dashboard-page ${bgImage ? "has-bg-image" : ""}`}>
+      {/* Ambient background orbs only if no background image */}
+      {!bgImage && (
+        <>
+          <div className="kiosk-orb kiosk-orb-one" />
+          <div className="kiosk-orb kiosk-orb-two" />
+        </>
+      )}
+
+      {/* Dynamic Background Image strictly from env parameter 'backgroupdlo' (NO extra color) */}
+      {bgImage && (
+        <div
+          className="dashboard-bg-backdrop"
+          aria-hidden="true"
+          style={{
+            backgroundImage: `url("${bgImage}")`,
+          }}
+        />
+      )}
 
       {/* TOP COMMAND NAVBAR (Identical layout & alignment to Student/Staff) */}
-      <header className="dash-navbar" suppressHydrationWarning>
-        <div className="command-brand" onClick={onBackToKiosk} style={{ cursor: "pointer" }} suppressHydrationWarning>
-          <div className="command-mark" aria-hidden="true" suppressHydrationWarning>
+      <header className="dash-navbar" style={{ position: "relative", zIndex: 30 }} suppressHydrationWarning>
+        <div className="command-brand" style={{ display: "flex", alignItems: "center", gap: "14px" }} suppressHydrationWarning>
+          <button className="command-back" onClick={onBackToKiosk} aria-label="Back to role selection" title="Back to Kiosk Home">
+            <ArrowLeft size={19} />
+          </button>
+          <div className="command-mark" aria-hidden="true" style={{ width: "42px", height: "42px" }} suppressHydrationWarning>
             <img
               src={schoolLogo}
               alt={`${schoolName} Logo`}
@@ -463,11 +500,11 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
           </div>
 
           {/* Clock Widget */}
-          <div className="dash-clock-widget">
+          <div className="dash-clock-widget" suppressHydrationWarning>
             <Calendar size={13} style={{ color: "#ea580c" }} />
-            <span>
+            <span suppressHydrationWarning>
               {currentTime.toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short" })} •{" "}
-              <b>{currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}</b>
+              <b suppressHydrationWarning>{currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}</b>
             </span>
           </div>
 

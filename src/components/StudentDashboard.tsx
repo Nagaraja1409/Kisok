@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import MarkdownResponse from "@/components/chat/MarkdownResponse";
-import { getUserSession, clearUserSession, getInstituteLogo, getInstituteName, getAiAssistantName } from "@/lib/session";
+import { getUserSession, clearUserSession, getInstituteLogo, getInstituteName, getAiAssistantName, getBackgroundLo } from "@/lib/session";
 import { SessionInfo } from "@/types/auth";
 import { CLIENT_API_ENDPOINTS } from "@/config/api";
 import {
@@ -94,6 +94,7 @@ const STUDENT_MOTTOES = [
 
 export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
   const [session, setSession] = useState<SessionInfo | null>(null);
+  const [bgImage, setBgImage] = useState<string>(() => getBackgroundLo());
   const [currentScreen, setCurrentScreen] = useState<StudentScreen>("dashboard");
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -707,12 +708,29 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
 
   // On mount: load user session & trigger live API calls exactly ONCE
   useEffect(() => {
+    // 1. Fetch dynamic branding and background image strictly from environment (/api/branding)
+    fetch("/api/branding", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.backgroupdlo) {
+          setBgImage(data.backgroupdlo);
+          try {
+            sessionStorage.setItem("backgroupdlo", data.backgroupdlo);
+            localStorage.setItem("kiosk_backgroupdlo", data.backgroupdlo);
+          } catch { }
+        }
+      })
+      .catch(() => { });
+
     if (initialLoadDoneRef.current) return;
     initialLoadDoneRef.current = true;
 
     const s = getUserSession();
     if (s) {
       setSession(s);
+      if (s.backgroupdlo) {
+        setBgImage(s.backgroupdlo);
+      }
       fetchStudentDetails(s);
       fetchAttendance(s);
       fetchFees(s);
@@ -892,15 +910,33 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
   );
 
   return (
-    <div className="dashboard-page">
-      {/* Floating Ambient Orbs (Matching modern software theme) */}
-      <div className="kiosk-orb kiosk-orb-one" />
-      <div className="kiosk-orb kiosk-orb-two" />
+    <div className={`dashboard-page ${bgImage ? "has-bg-image" : ""}`}>
+      {/* Floating Ambient Orbs only if no background image */}
+      {!bgImage && (
+        <>
+          <div className="kiosk-orb kiosk-orb-one" />
+          <div className="kiosk-orb kiosk-orb-two" />
+        </>
+      )}
 
-      {/* TOP COMMAND NAVBAR (ROLE SELECTION COMMAND THEME) */}
-      <header className="dash-navbar" suppressHydrationWarning>
-        <div className="command-brand" onClick={handleLogout} style={{ cursor: "pointer" }} suppressHydrationWarning>
-          <div className="command-mark" aria-hidden="true" suppressHydrationWarning>
+      {/* Dynamic Background Image strictly from env parameter 'backgroupdlo' (NO extra color) */}
+      {bgImage && (
+        <div
+          className="dashboard-bg-backdrop"
+          aria-hidden="true"
+          style={{
+            backgroundImage: `url("${bgImage}")`,
+          }}
+        />
+      )}
+
+      {/* TOP COMMAND NAVBAR (ROLE SELECTION COMMAND THEME - FULLY DYNAMIC) */}
+      <header className="dash-navbar" style={{ position: "relative", zIndex: 30 }} suppressHydrationWarning>
+        <div className="command-brand" style={{ display: "flex", alignItems: "center", gap: "14px" }} suppressHydrationWarning>
+          <button className="command-back" onClick={handleLogout} aria-label="Back to role selection" title="Back to Kiosk Home">
+            <ArrowLeft size={19} />
+          </button>
+          <div className="command-mark" aria-hidden="true" style={{ width: "42px", height: "42px" }} suppressHydrationWarning>
             <img
               src={schoolLogo}
               alt={`${schoolName} Logo`}
@@ -969,11 +1005,11 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
           </div>
 
           {/* Command Time Pill */}
-          <div className="dash-clock-widget">
+          <div className="dash-clock-widget" suppressHydrationWarning>
             <Calendar size={13} style={{ color: "#ea580c" }} />
-            <span>
+            <span suppressHydrationWarning>
               {currentTime.toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short" })} •{" "}
-              <b>{currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}</b>
+              <b suppressHydrationWarning>{currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}</b>
             </span>
           </div>
 
