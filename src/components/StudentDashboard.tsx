@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { getUserSession, clearUserSession } from "@/lib/session";
+import MarkdownResponse from "@/components/chat/MarkdownResponse";
+import { getUserSession, clearUserSession, getInstituteLogo, getInstituteName, getAiAssistantName } from "@/lib/session";
 import { SessionInfo } from "@/types/auth";
 import { CLIENT_API_ENDPOINTS } from "@/config/api";
-import { sendGreenAiQuery } from "@/lib/greenAiClient";
-import RoleAIFeatureExplorer from "@/components/shared/RoleAIFeatureExplorer";
 import {
   GraduationCap,
   FileText,
@@ -78,7 +77,7 @@ const STUDENT_MOTTOES = [
   },
   {
     quote: "Excellence is not an act, but a daily habit. Keep learning every single day!",
-    author: "Green Valley Academic Creed",
+    author: "Campus Academic Creed",
     badge: "Excellence",
   },
   {
@@ -212,7 +211,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
     {
       id: "msg-welcome",
       sender: "bot",
-      text: "Hello! I'm GREEN_AI, your smart campus assistant. I can help you explore the features available for your role. What would you like to do?",
+      text: `👋 Hello! I am **${getAiAssistantName()}**, your Student & Parent Kiosk Assistant. Ask me anything about your attendance, exam results, timetable, homework diary, or fees!`,
       time: "Just now",
       suggestions: [
         "What is my attendance rate?",
@@ -280,7 +279,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           amst_id: s.AMST_ID || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
           roleid: s.RoleId || 3,
         }),
       });
@@ -289,6 +289,11 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
         const detailsList = toSafeArray(result.data?.studentDetails);
         if (result.success && detailsList.length > 0) {
           const detail = detailsList[0];
+          const dynamicAsmay = Number(detail.ASMAY_Id || detail.asmaY_Id || 0);
+          if (dynamicAsmay > 0 && dynamicAsmay !== s.ASMAY_Id) {
+            s.ASMAY_Id = dynamicAsmay;
+            sessionStorage.setItem("ASMAY_Id", String(dynamicAsmay));
+          }
           setStudentDetails({
             name: detail.AMST_FirstName || s.name || s.studentname || s.username || "",
             admNo: detail.AMST_AdmNo || (s.AMST_ID ? String(s.AMST_ID) : ""),
@@ -348,7 +353,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           amst_id: s.AMST_ID || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
           type: "overall",
         }),
       });
@@ -389,7 +395,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           amst_id: s.AMST_ID || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
           roleid: s.RoleId || 3,
         }),
       });
@@ -431,7 +438,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           amst_id: s.AMST_ID || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
           month: monthNum,
         }),
       });
@@ -472,7 +480,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           amst_id: s.AMST_ID || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
           flag: "O",
         }),
       });
@@ -512,7 +521,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           amst_id: s.AMST_ID || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
           roleid: s.RoleId || 3,
         }),
       });
@@ -553,7 +563,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           amst_id: s.AMST_ID || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
         }),
       });
       if (res.ok) {
@@ -595,7 +606,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
           body: JSON.stringify({
             asmay_id: s.ASMAY_Id || 0,
             amst_id: s.AMST_ID || 0,
-            MI_Id: s.miid || 31,
+            MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+            MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
             type: mode,
             examId: examId,
             subjectId: subjectId,
@@ -655,7 +667,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
           body: JSON.stringify({
             asmay_id: s.ASMAY_Id || 0,
             amst_id: s.AMST_ID || 0,
-            MI_Id: s.miid || 31,
+            MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+            MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
             type: mode,
             isms_id: subId,
             eme_id: exId,
@@ -733,8 +746,9 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
     if (screen === "exam-overall") fetchExamOverall();
   };
 
-  // AI Chat Handler
+  // AI Chat Handler connected to /api/chat
   const handleSendChatMessage = async (promptText?: string) => {
+    if (isTyping) return;
     const q = (promptText || chatInputText).trim();
     if (!q) return;
 
@@ -750,55 +764,47 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
     setIsTyping(true);
 
     try {
-      const uiContext = {
-        studentDetails,
-        profile: studentDetails,
-        attendanceData,
-        attendance: attendanceData,
-        dynamicAttendanceRate,
-        totalWorkingDays,
-        totalPresentDays,
-        feeData,
-        fees: feeData,
-        totalFeeBalance,
-        timetableData,
-        timetable: timetableData,
-        homeworkData,
-        examMarksData,
-        marks: examMarksData,
-        noticesData,
-      };
-
-      const result = await sendGreenAiQuery({
-        message: q,
-        role: "student_parent",
-        userId: studentDetails.admNo || session?.username || "STU-1001",
-        sessionId: `kiosk_student_${session?.UserId || session?.username || "session"}`,
-        uiContext,
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: q,
+          role: "student",
+          history: chatMessages.slice(-6).map((m) => ({
+            role: m.sender === "user" ? "user" : "assistant",
+            content: m.text,
+          })),
+        }),
       });
 
+      const data = await res.json();
+      const botReply = data.answer || "I could not retrieve an answer at this time. Please try again.";
+
+      const suggestions = [
+        "What is my attendance rate?",
+        "Show my exam results",
+        "What is my timetable today?",
+        "Do I have pending fee balance?",
+      ];
+
       setChatMessages((prev) => [
         ...prev,
         {
           id: `msg-bot-${Date.now()}`,
           sender: "bot",
-          text: result.answer,
+          text: botReply,
           time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-          suggestions: result.followupSuggestions && result.followupSuggestions.length > 0
-            ? result.followupSuggestions
-            : ["Show timetable", "Check fee dues", "Show exam scorecards"],
+          suggestions,
         },
       ]);
-    } catch (e: any) {
-      console.error("[StudentDashboard AI] Error:", e);
+    } catch {
       setChatMessages((prev) => [
         ...prev,
         {
           id: `msg-bot-${Date.now()}`,
           sender: "bot",
-          text: "I am having trouble retrieving that from the campus server. Please try again.",
+          text: "⚠️ Campus AI assistant is temporarily unavailable. Please check your network connection or try again shortly.",
           time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-          suggestions: ["Show timetable", "Check fee dues"],
         },
       ]);
     } finally {
@@ -811,7 +817,9 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
     [studentDetails.className, studentDetails.sectionName].filter(Boolean).join(" - ") ||
     [session?.asmcL_ClassName, session?.asms_sectionname].filter(Boolean).join(" - ") ||
     "Student Profile";
-  const schoolName = session?.initname || "Green Valley Public School";
+  const schoolName = session?.initname || getInstituteName();
+  const schoolLogo = session?.initlogo || getInstituteLogo();
+  const aiName = getAiAssistantName();
 
   // Dynamic attendance metrics
   const totalWorkingDays = attendanceData.reduce((acc, a) => acc + a.classHeld, 0);
@@ -890,20 +898,24 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
       <div className="kiosk-orb kiosk-orb-two" />
 
       {/* TOP COMMAND NAVBAR (ROLE SELECTION COMMAND THEME) */}
-      <header className="dash-navbar">
-        <div className="command-brand" onClick={handleLogout} style={{ cursor: "pointer" }}>
-          <div className="command-mark" aria-hidden="true">
-            <svg width="34" height="34" viewBox="0 0 48 48" fill="none">
-              <path d="M24 7c4 4 10 6 14 3 0 8-7 13-14 14C17 23 10 18 10 10c4 3 10 1 14-3Z" fill="#ea580c" />
-              <path d="M24 24V11" stroke="#c2410c" strokeWidth="2.5" strokeLinecap="round" />
-              <path d="M5 36c7-4.5 13-3.5 19 1 6-4.5 12-5.5 19-1V18c-7-4.5-13-3.5-19 1-6-4.5-12-5.5-19-1v18Z" fill="#9a3412" />
-              <path d="M24 19v18" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
+      <header className="dash-navbar" suppressHydrationWarning>
+        <div className="command-brand" onClick={handleLogout} style={{ cursor: "pointer" }} suppressHydrationWarning>
+          <div className="command-mark" aria-hidden="true" suppressHydrationWarning>
+            <img
+              src={schoolLogo}
+              alt={`${schoolName} Logo`}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/mvps/brand/logo.png";
+              }}
+              suppressHydrationWarning
+            />
           </div>
-          <div>
-            <p className="command-kicker">GREEN VALLEY • SMART CAMPUS</p>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }}>
-              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "#1e293b", whiteSpace: "nowrap" }}>
+          <div suppressHydrationWarning>
+            <p className="command-kicker" suppressHydrationWarning>{schoolName.toUpperCase()} • SMART CAMPUS</p>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }} suppressHydrationWarning>
+              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "#1e293b", whiteSpace: "nowrap" }} suppressHydrationWarning>
                 {schoolName}
               </h1>
               <span
@@ -1028,7 +1040,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
             { id: "homework" as StudentScreen, name: "Home-work", icon: BookOpen },
             { id: "timetable" as StudentScreen, name: "Time-Table", icon: Clock },
             { id: "exam-overall" as StudentScreen, name: "Over All Exam", icon: BarChart2 },
-            { id: "aispace" as StudentScreen, name: "GREEN_AI", icon: Sparkles },
+            { id: "aispace" as StudentScreen, name: aiName, icon: Sparkles },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = currentScreen === tab.id;
@@ -1215,17 +1227,17 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                 type="button"
                 onClick={() => setCurrentScreen("aispace")}
                 className="hero-ai-capsule-btn"
-                title="Launch Student GREEN_AI Space"
+                title={`Launch ${aiName} Space`}
               >
                 <div className="hero-ai-robo-wrap">
-                  <img src="/ai_robot.png" alt="GREEN_AI" className="hero-ai-robo-img" />
+                  <img src="/ai_robot.png" alt={aiName} className="hero-ai-robo-img" />
                   <span className="hero-ai-pulse-dot" />
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="hero-ai-kicker">
                     <Sparkles size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> AI SPACE
                   </div>
-                  <span className="hero-ai-action">Ask GREEN_AI →</span>
+                  <span className="hero-ai-action">Ask {aiName} →</span>
                 </div>
               </button>
             </div>
@@ -1465,10 +1477,10 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                   <span className="student-metric-val">
                     {examMarksData.length > 0
                       ? `${Math.round(
-                          (examMarksData.reduce((acc, m) => acc + m.obtainedMarks, 0) /
-                            Math.max(1, examMarksData.reduce((acc, m) => acc + m.maxMarks, 0))) *
-                            100
-                        )}%`
+                        (examMarksData.reduce((acc, m) => acc + m.obtainedMarks, 0) /
+                          Math.max(1, examMarksData.reduce((acc, m) => acc + m.maxMarks, 0))) *
+                        100
+                      )}%`
                       : "—"}
                   </span>
                   <span className="student-metric-label">Assessment Average</span>
@@ -1949,7 +1961,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                   boxShadow: "0 2px 6px rgba(234, 88, 12, 0.25)",
                 }}
               >
-                <Sparkles size={13} /> Ask GREEN_AI →
+                <Sparkles size={13} /> Ask {aiName} →
               </button>
             </div>
           </section>
@@ -2246,15 +2258,15 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
               >
                 {examMode === "EWAS"
                   ? examsList.map((ex) => (
-                      <option key={ex.id} value={ex.id}>
-                        {ex.name}
-                      </option>
-                    ))
+                    <option key={ex.id} value={ex.id}>
+                      {ex.name}
+                    </option>
+                  ))
                   : subjectsList.map((sub) => (
-                      <option key={sub.id} value={sub.id}>
-                        {sub.name}
-                      </option>
-                    ))}
+                    <option key={sub.id} value={sub.id}>
+                      {sub.name}
+                    </option>
+                  ))}
               </select>
 
               <button
@@ -2299,10 +2311,10 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                   <h4>
                     {examMarksData.length > 0 && examMarksData.reduce((acc, m) => acc + m.maxMarks, 0) > 0
                       ? `${Math.round(
-                          (examMarksData.reduce((acc, m) => acc + m.obtainedMarks, 0) /
-                            examMarksData.reduce((acc, m) => acc + m.maxMarks, 0)) *
-                            100
-                        )}%`
+                        (examMarksData.reduce((acc, m) => acc + m.obtainedMarks, 0) /
+                          examMarksData.reduce((acc, m) => acc + m.maxMarks, 0)) *
+                        100
+                      )}%`
                       : "—"}
                   </h4>
                 </div>
@@ -3423,15 +3435,15 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
               >
                 {overallMode === "SubOVERALL"
                   ? overallSubjects.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))
                   : overallExams.map((ex) => (
-                      <option key={ex.id} value={ex.id}>
-                        {ex.name}
-                      </option>
-                    ))}
+                    <option key={ex.id} value={ex.id}>
+                      {ex.name}
+                    </option>
+                  ))}
               </select>
 
               <button
@@ -3557,7 +3569,7 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
       )}
 
       {/* ========================================================
-          VIEW 10: DEDICATED FULL SCREEN — GREEN_AI SPACE
+          VIEW 10: DEDICATED FULL SCREEN — GREENBOT AI SPACE
           ======================================================== */}
       {currentScreen === "aispace" && (
         <section className="student-fullscreen-page">
@@ -3574,8 +3586,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                 <Sparkles size={20} />
               </div>
               <div>
-                <h2>GREEN_AI • Student &amp; Parent AI Assistant</h2>
-                <p>Your Smart Campus AI Assistant</p>
+                <h2>{aiName} • Student &amp; Parent AI Assistant</h2>
+                <p>Instant answers on attendance, exam scorecards, timetable, and school notices</p>
               </div>
             </div>
 
@@ -3587,99 +3599,17 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
             </div>
           </div>
 
-          <div
-            className="student-screen-scroll-body"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "minmax(350px, 430px) 1fr",
-              gap: "1.2rem",
-              height: "100%",
-              minHeight: 0,
-              padding: "0.75rem 1.25rem",
-              overflow: "hidden",
-            }}
-          >
-            {/* LEFT ZONE: Mapped AI Feature Explorer */}
-            <RoleAIFeatureExplorer
-              role="student_parent"
-              onSelectPrompt={(prompt) => handleSendChatMessage(prompt)}
-            />
-
-            {/* RIGHT ZONE: GREEN_AI Interactive Chat Workspace */}
+          <div className="student-screen-scroll-body" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
             <div
               className="student-screen-card"
               style={{
+                flex: 1,
                 display: "flex",
                 flexDirection: "column",
                 overflow: "hidden",
-                height: "100%",
-                minHeight: 0,
-                borderRadius: "20px",
-                border: "1.5px solid rgba(254, 215, 170, 0.8)",
-                boxShadow: "0 10px 32px rgba(15, 23, 42, 0.05)",
-                background: "#ffffff",
+                minHeight: "450px",
               }}
             >
-              {/* Header */}
-              <div
-                style={{
-                  padding: "0.75rem 1.15rem",
-                  background: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)",
-                  borderBottom: "1px solid rgba(254, 215, 170, 0.8)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexShrink: 0,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
-                  <img
-                    src="/ai_robot.png"
-                    alt="GREEN_AI"
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      objectFit: "contain",
-                      background: "#fff",
-                      border: "1.5px solid #ea580c",
-                      padding: 2,
-                    }}
-                  />
-                  <div>
-                    <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1e293b" }}>
-                      GREEN_AI Copilot
-                    </div>
-                    <div style={{ fontSize: "0.68rem", color: "#16a34a", fontWeight: 700 }}>
-                      ● Online • Grounded in Student Academic Records
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  className="student-refresh-btn"
-                  onClick={() =>
-                    setChatMessages([
-                      {
-                        id: "welcome-reset",
-                        sender: "bot",
-                        text: "Welcome to GREEN_AI! Tap any mapped capability on the left or type below to examine attendance compliance, fee ledgers, exam marks, or daily timetables.",
-                        time: "Just now",
-                        suggestions: [
-                          "What is my attendance rate?",
-                          "Show my recent exam scores",
-                          "What is my timetable today?",
-                        ],
-                      },
-                    ])
-                  }
-                  title="Clear conversation"
-                  style={{ fontSize: "0.72rem", padding: "0.3rem 0.7rem" }}
-                >
-                  <RefreshCw size={13} /> Reset
-                </button>
-              </div>
-
               {/* Chat Message Window */}
               <div
                 style={{
@@ -3713,10 +3643,10 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                         lineHeight: 1.5,
                         boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
                         border: msg.sender === "user" ? "none" : "1px solid rgba(226, 232, 240, 0.9)",
-                        whiteSpace: "pre-wrap",
+                        maxWidth: "100%",
                       }}
                     >
-                      {msg.text}
+                      <MarkdownResponse content={msg.text} isUser={msg.sender === "user"} />
                     </div>
                     <span style={{ fontSize: "0.65rem", color: "#94a3b8", marginTop: "3px", padding: "0 4px" }}>
                       {msg.time}
@@ -3749,9 +3679,9 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                 ))}
 
                 {isTyping && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#64748b", fontSize: "0.75rem" }}>
-                    <RefreshCw size={13} className="animate-spin" style={{ color: "#ea580c" }} />
-                    <span>GREEN_AI is typing an answer...</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#ea580c", fontSize: "0.75rem", fontWeight: 600 }}>
+                    <RefreshCw size={13} className="animate-spin" />
+                    <span>{aiName} is typing an answer...</span>
                   </div>
                 )}
                 <div ref={chatMessagesEndRef} />
@@ -3762,19 +3692,19 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                 <span style={{ fontSize: "0.68rem", fontWeight: 800, color: "#94a3b8", flexShrink: 0 }}>
                   Quick Prompts:
                 </span>
-                <button className="ai-quick-prompt-btn" onClick={() => handleSendChatMessage("What is my attendance rate?")}>
+                <button className="ai-quick-prompt-btn" disabled={isTyping} onClick={() => handleSendChatMessage("What is my attendance rate?")}>
                   📊 Attendance Ratio
                 </button>
-                <button className="ai-quick-prompt-btn" onClick={() => handleSendChatMessage("Show my exam results")}>
+                <button className="ai-quick-prompt-btn" disabled={isTyping} onClick={() => handleSendChatMessage("Show my exam results")}>
                   📝 Exam Scorecards
                 </button>
-                <button className="ai-quick-prompt-btn" onClick={() => handleSendChatMessage("What is my timetable today?")}>
+                <button className="ai-quick-prompt-btn" disabled={isTyping} onClick={() => handleSendChatMessage("What is my timetable today?")}>
                   🗓️ Today&apos;s Classes
                 </button>
-                <button className="ai-quick-prompt-btn" onClick={() => handleSendChatMessage("Do I have pending fee balance?")}>
+                <button className="ai-quick-prompt-btn" disabled={isTyping} onClick={() => handleSendChatMessage("Do I have pending fee balance?")}>
                   💳 Fee Balance Status
                 </button>
-                <button className="ai-quick-prompt-btn" onClick={() => handleSendChatMessage("Show homework diary")}>
+                <button className="ai-quick-prompt-btn" disabled={isTyping} onClick={() => handleSendChatMessage("Show homework diary")}>
                   📚 Homework Diary
                 </button>
               </div>
@@ -3784,8 +3714,9 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                 <input
                   type="text"
                   className="ai-chat-text-input"
-                  placeholder="Ask GREEN_AI about attendance, report card marks, timetable, or fees..."
+                  placeholder={`Ask ${aiName} about attendance, report card marks, timetable, or fees...`}
                   value={chatInputText}
+                  disabled={isTyping}
                   onChange={(e) => setChatInputText(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -3796,7 +3727,8 @@ export default function StudentDashboard({ onBackToKiosk }: DashboardProps) {
                 <button
                   className="ai-chat-send-btn"
                   onClick={() => handleSendChatMessage()}
-                  title="Send message to GREEN_AI"
+                  disabled={isTyping}
+                  title={`Send message to ${aiName}`}
                 >
                   <Send size={15} />
                 </button>

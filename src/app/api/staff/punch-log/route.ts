@@ -12,9 +12,9 @@ function extractArray(val: any): any[] {
   return [];
 }
 
-async function handlePunchLog(params: { userid?: any; MI_Id?: any; fromDate?: string; toDate?: string; portalUrl?: string }) {
+async function handlePunchLog(params: { userid?: any; MI_Id?: any; MI_Subdomain?: string; fromDate?: string; toDate?: string; portalUrl?: string }) {
   try {
-    const { userid, MI_Id, fromDate, toDate, portalUrl } = params;
+    const { userid, MI_Id, MI_Subdomain, fromDate, toDate, portalUrl } = params;
 
     const endpoint = portalUrl
       ? `${portalUrl.trim().replace(/\/+$/, "")}/api/EmployeePunchAttendenceFacade/getrpt/`
@@ -23,12 +23,17 @@ async function handlePunchLog(params: { userid?: any; MI_Id?: any; fromDate?: st
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    const payload = {
-      MI_Id: Number(MI_Id || 31),
+    const miSubdomain = (MI_Subdomain || VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "").trim();
+    const payload: any = {
+      MI_Id: Number(MI_Id || VAPS_API_ENDPOINTS.DEFAULT_MI_ID || 0),
       UserId: Number(userid || 0),
       fromdate: fromDate || thirtyDaysAgo,
       todate: toDate || now.toISOString(),
     };
+    if (miSubdomain) {
+      payload.MI_Subdomain = miSubdomain;
+      payload.mI_Subdomain = miSubdomain;
+    }
 
     console.log("[Staff Punch Log API] Calling:", endpoint, payload);
 
@@ -118,9 +123,10 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const userid = searchParams.get("userid") || searchParams.get("empId") || "0";
-  const MI_Id = searchParams.get("MI_Id") || searchParams.get("miId") || "31";
+  const MI_Id = searchParams.get("MI_Id") || searchParams.get("miId") || VAPS_API_ENDPOINTS.DEFAULT_MI_ID || "";
+  const MI_Subdomain = searchParams.get("MI_Subdomain") || searchParams.get("mi_subdomain") || VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "";
   const fromDate = searchParams.get("fromDate") || "";
   const toDate = searchParams.get("toDate") || "";
   const portalUrl = searchParams.get("portalUrl") || "";
-  return handlePunchLog({ userid, MI_Id, fromDate, toDate, portalUrl });
+  return handlePunchLog({ userid, MI_Id, MI_Subdomain, fromDate, toDate, portalUrl });
 }

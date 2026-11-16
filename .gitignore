@@ -91,3 +91,4 @@ $RECYCLE.BIN/
 *.tmp
 *.temp
 
+backend/venv

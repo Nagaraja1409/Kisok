@@ -12,17 +12,18 @@ function extractArray(val: any): any[] {
   return [];
 }
 
-async function handleTimetable(params: { asmay_id?: any; userid?: any; MI_Id?: any; portalUrl?: string }) {
+async function handleTimetable(params: { asmay_id?: any; userid?: any; MI_Id?: any; MI_Subdomain?: string; portalUrl?: string }) {
   try {
-    const { asmay_id, userid, MI_Id, portalUrl } = params;
+    const { asmay_id, userid, MI_Id, MI_Subdomain, portalUrl } = params;
 
     const endpoint = portalUrl
       ? `${portalUrl.trim().replace(/\/+$/, "")}/api/EmployeeTTFacade/getdata/`
       : VAPS_API_ENDPOINTS.EMPLOYEE_TIMETABLE;
 
-    let finalAsmayId = Number(asmay_id || 0);
+    let finalAsmayId = Number(asmay_id || VAPS_API_ENDPOINTS.DEFAULT_ASMAY_ID || 0);
     const userIdNum = Number(userid || 0);
-    const instId = Number(MI_Id || 31);
+    const instId = Number(MI_Id || VAPS_API_ENDPOINTS.DEFAULT_MI_ID || 0);
+    const miSubdomain = (MI_Subdomain || VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "").trim();
 
     // Auto-resolve asmay_id from EmployeePtalFacade if not provided
     if (finalAsmayId <= 0 && userIdNum > 0) {
@@ -30,10 +31,15 @@ async function handleTimetable(params: { asmay_id?: any; userid?: any; MI_Id?: a
         const detailsEndpoint = portalUrl
           ? `${portalUrl.trim().replace(/\/+$/, "")}/api/EmployeePtalFacade/getdata/`
           : VAPS_API_ENDPOINTS.EMPLOYEE_DETAILS;
+        const autoPayload: any = { asmayID: 0, userid: userIdNum, MI_Id: instId };
+        if (miSubdomain) {
+          autoPayload.MI_Subdomain = miSubdomain;
+          autoPayload.mI_Subdomain = miSubdomain;
+        }
         const detRes = await fetch(detailsEndpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ asmayID: 0, userid: userIdNum, MI_Id: instId }),
+          body: JSON.stringify(autoPayload),
           signal: AbortSignal.timeout(5000),
         });
         if (detRes.ok) {
@@ -47,11 +53,15 @@ async function handleTimetable(params: { asmay_id?: any; userid?: any; MI_Id?: a
       }
     }
 
-    const payload = {
+    const payload: any = {
       MI_Id: instId,
       ASMAY_Id: finalAsmayId,
       UserId: userIdNum,
     };
+    if (miSubdomain) {
+      payload.MI_Subdomain = miSubdomain;
+      payload.mI_Subdomain = miSubdomain;
+    }
 
     console.log("[Staff Timetable API] Calling:", endpoint, payload);
 
@@ -143,9 +153,10 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
-  const asmay_id = searchParams.get("asmay_id") || searchParams.get("asmayId") || "0";
+  const asmay_id = searchParams.get("asmay_id") || searchParams.get("asmayId") || VAPS_API_ENDPOINTS.DEFAULT_ASMAY_ID || "0";
   const userid = searchParams.get("userid") || searchParams.get("empId") || "0";
-  const MI_Id = searchParams.get("MI_Id") || searchParams.get("miId") || "31";
+  const MI_Id = searchParams.get("MI_Id") || searchParams.get("miId") || VAPS_API_ENDPOINTS.DEFAULT_MI_ID || "";
+  const MI_Subdomain = searchParams.get("MI_Subdomain") || searchParams.get("mi_subdomain") || VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "";
   const portalUrl = searchParams.get("portalUrl") || "";
-  return handleTimetable({ asmay_id, userid, MI_Id, portalUrl });
+  return handleTimetable({ asmay_id, userid, MI_Id, MI_Subdomain, portalUrl });
 }

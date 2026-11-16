@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { getUserSession, clearUserSession } from "@/lib/session";
+import MarkdownResponse from "@/components/chat/MarkdownResponse";
+import { getUserSession, clearUserSession, getInstituteLogo, getInstituteName, getAiAssistantName } from "@/lib/session";
 import { SessionInfo } from "@/types/auth";
 import {
   ArrowLeft,
@@ -96,7 +97,7 @@ const ADMIN_NOTICES = [
     time: "1h ago",
     date: "14 Oct 2026",
     authority: "Central Board of Secondary Education",
-    details: "Green Valley Public School affiliation (Reg. 1930281) has been extended for another 5-year cycle with Grade A++ accreditation status. Full compliance documentation has been archived into the institutional audit locker.",
+    details: "Institutional board affiliation has been extended for another 5-year cycle with Grade A++ accreditation status. Full compliance documentation has been archived into the institutional audit locker.",
   },
   {
     id: 2,
@@ -181,7 +182,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
   const [chatMessages, setChatMessages] = useState<Array<{ sender: "bot" | "user"; text: string; time: string; tag?: string }>>([
     {
       sender: "bot",
-      text: "Hello! I'm GREEN_AI, your smart campus assistant. How can I help you today?",
+      text: `Greetings, Administrator. I am **${getAiAssistantName()}**, your Institutional Intelligence Assistant. I am connected to the campus smart grid, CBSE compliance ledger, fee reconciliation, and attendance telemetry. How may I assist your administration today?`,
       time: "Just now",
       tag: "ADMIN EXECUTIVE DESK",
     },
@@ -196,7 +197,8 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
     }
   }, [chatMessages, currentScreen]);
 
-  const handleSendChatMessage = (textToSend?: string) => {
+  const handleSendChatMessage = async (textToSend?: string) => {
+    if (isTyping) return;
     const query = (textToSend || chatInputText).trim();
     if (!query) return;
 
@@ -206,25 +208,24 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
     if (!textToSend) setChatInputText("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      let botResponse = "";
-      const lower = query.toLowerCase();
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: query,
+          role: "admin",
+          history: chatMessages.slice(-6).map((m) => ({
+            role: m.sender === "user" ? "user" : "assistant",
+            content: m.text,
+          })),
+        }),
+      });
 
-      if (lower.includes("attendance") || lower.includes("present") || lower.includes("absent")) {
-        botResponse = "📊 Campus Attendance Telemetry for today:\n• Overall Student Attendance: 94.8% (5,918 present out of 6,240 enrolled)\n• Faculty Check-ins: 98.8% (85 of 86 present, 1 on sanctioned duty leave)\n• Biometric gates sync: Active across all 6 campus entrances with real-time VAPS cloud streaming.";
-      } else if (lower.includes("fee") || lower.includes("collection") || lower.includes("finance") || lower.includes("revenue")) {
-        botResponse = "💳 Financial Liquidity & Fee Ledger Summary:\n• Term 2 Collections: ₹4.82 Cr collected (92.4% realization against ₹5.21 Cr target)\n• Outstanding Dues: ₹39.0 Lakh across 312 student profiles\n• Automated SMS & WhatsApp reminders dispatched to pending parents on 12th Oct.";
-      } else if (lower.includes("admission") || lower.includes("seats") || lower.includes("intake") || lower.includes("enrol")) {
-        botResponse = "🎓 AY 2026-27 Admissions Pipeline:\n• Total Applications Received: 428 across Grades LKG to 11\n• Entrance Evaluations Cleared: 310 candidates\n• Final Seats Confirmed: 215 / 250 available vacancies\n• Class 6 & Class 9 waitlists active.";
-      } else if (lower.includes("bus") || lower.includes("transport") || lower.includes("safety") || lower.includes("fleet")) {
-        botResponse = "🚌 Transport & Campus Fleet Status:\n• 38/38 GPS buses operational and geo-fenced\n• All vehicle speed governors verified compliant (<40 km/h campus perimeter)\n• 0 route deviations reported today\n• CCTV fleet feeds streamed to security command.";
-      } else if (lower.includes("cbse") || lower.includes("affiliation") || lower.includes("compliance") || lower.includes("audit")) {
-        botResponse = "🛡️ CBSE Regulatory & Compliance Audit:\n• CBSE Affiliation No. 1930281 renewal formally ratified through 2031\n• NAAC Institutional Accreditation: Grade A++ (Score 3.82/4.0)\n• Fire Safety NOC & Building Stability certificates valid till March 2027.";
-      } else if (lower.includes("solar") || lower.includes("power") || lower.includes("grid") || lower.includes("energy")) {
-        botResponse = "⚡ Campus Solar Smart Grid Telemetry:\n• Current Generation: 48.2 kWh (peak sun)\n• Campus Self-Sufficiency: 96% power independence\n• Battery Reserve: 88% capacity at Substation A.";
-      } else {
-        botResponse = `✨ Understood, Administrator. GREEN_AI has logged your request: "${query}". All institutional databases, smart meters, and academic controllers are currently synchronized and running at peak performance.`;
-      }
+      const data = await res.json();
+      const botResponse =
+        data.answer ||
+        `✨ Understood, Administrator. ${getAiAssistantName()} has logged your request: "${query}". All institutional databases are synchronized.`;
 
       setChatMessages((prev) => [
         ...prev,
@@ -232,11 +233,22 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
           sender: "bot",
           text: botResponse,
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          tag: "ADMIN EXECUTIVE DESK",
+          tag: data.selectedAgent ? `${data.selectedAgent.toUpperCase()} DESK` : "ADMIN EXECUTIVE DESK",
         },
       ]);
+    } catch {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: "⚠️ Administrative AI Telemetry is temporarily unavailable. Please retry shortly.",
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          tag: "SYSTEM ALERT",
+        },
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 700);
+    }
   };
 
   // Real-time Clock
@@ -287,8 +299,10 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
     onBackToKiosk();
   };
 
-  const adminName = session?.username || "Dr. R. K. Verma";
-  const schoolName = session?.initname || "Green Valley Public School";
+  const adminName = session?.username || "";
+  const schoolName = session?.initname || getInstituteName();
+  const schoolLogo = session?.initlogo || getInstituteLogo();
+  const aiName = getAiAssistantName();
   const adminRole = session?.Rolename || "Campus Administrator";
   const academicYear = session?.ASMAY_Year || "2025-2026";
 
@@ -299,20 +313,24 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
       <div className="kiosk-orb kiosk-orb-two" />
 
       {/* TOP COMMAND NAVBAR (ROLE SELECTION COMMAND THEME) */}
-      <header className="dash-navbar">
-        <div className="command-brand" onClick={handleLogout} style={{ cursor: "pointer" }}>
-          <div className="command-mark" aria-hidden="true">
-            <svg width="34" height="34" viewBox="0 0 48 48" fill="none">
-              <path d="M24 7c4 4 10 6 14 3 0 8-7 13-14 14C17 23 10 18 10 10c4 3 10 1 14-3Z" fill="#7c3aed" />
-              <path d="M24 24V11" stroke="#6d28d9" strokeWidth="2.5" strokeLinecap="round" />
-              <path d="M5 36c7-4.5 13-3.5 19 1 6-4.5 12-5.5 19-1V18c-7-4.5-13-3.5-19 1-6-4.5-12-5.5-19-1v18Z" fill="#5b21b6" />
-              <path d="M24 19v18" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
+      <header className="dash-navbar" suppressHydrationWarning>
+        <div className="command-brand" onClick={handleLogout} style={{ cursor: "pointer" }} suppressHydrationWarning>
+          <div className="command-mark" aria-hidden="true" suppressHydrationWarning>
+            <img
+              src={schoolLogo}
+              alt={`${schoolName} Logo`}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/mvps/brand/logo.png";
+              }}
+              suppressHydrationWarning
+            />
           </div>
-          <div>
-            <p className="command-kicker">GREEN VALLEY • SMART CAMPUS</p>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
-              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "#1e293b" }}>
+          <div suppressHydrationWarning>
+            <p className="command-kicker" suppressHydrationWarning>{schoolName.toUpperCase()} • SMART CAMPUS</p>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }} suppressHydrationWarning>
+              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "#1e293b" }} suppressHydrationWarning>
                 {schoolName}
               </h1>
               <span
@@ -463,17 +481,17 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                 type="button"
                 onClick={() => setCurrentScreen("aispace")}
                 className="hero-ai-capsule-btn"
-                title="Launch Admin GREEN_AI Space"
+                title="Launch Admin AI Command Space"
               >
                 <div className="hero-ai-robo-wrap">
-                  <img src="/ai_robot.png" alt="GREEN_AI" className="hero-ai-robo-img" />
+                  <img src="/ai_robot.png" alt={aiName} className="hero-ai-robo-img" />
                   <span className="hero-ai-pulse-dot" />
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="hero-ai-kicker">
-                    <Sparkles size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> GREEN_AI
+                    <Sparkles size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> EXECUTIVE AI
                   </div>
-                  <span className="hero-ai-action">Ask GREEN_AI →</span>
+                  <span className="hero-ai-action">Ask {aiName} →</span>
                 </div>
               </button>
             </div>
@@ -1288,7 +1306,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
               </div>
               <div>
                 <h2>Institutional Fee Ledger & Accounts Reconciliation</h2>
-                <p>Term-2 Tuition & Transportation Fee Ledger • Green Valley Public School</p>
+                <p>Term-2 Tuition & Transportation Fee Ledger • {schoolName}</p>
               </div>
             </div>
 
@@ -1595,7 +1613,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                   </span>
                 </div>
                 <div style={{ fontSize: "0.85rem", color: "#64748b", marginBottom: "0.75rem" }}>
-                  Directorate of Institutional Governance • Green Valley Public School
+                  Directorate of Institutional Governance • {schoolName}
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
@@ -1665,8 +1683,8 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                 <Bot size={20} />
               </div>
               <div>
-                <h2>GREEN_AI Executive Assistant</h2>
-                <p>Your Smart Campus AI Assistant</p>
+                <h2>{aiName} Executive Assistant</h2>
+                <p>Institutional Operations Copilot • Governance & Smart Campus Telemetry</p>
               </div>
             </div>
 
@@ -1700,12 +1718,12 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                   <div className="ai-robot-showcase-frame" style={{ borderColor: "#7c3aed", boxShadow: "0 8px 24px rgba(124, 58, 237, 0.2)" }}>
                     <img
                       src="/ai_robot.png"
-                      alt="GREEN_AI Robot"
+                      alt={`${aiName} Robot`}
                       className="ai-robot-showcase-img"
                     />
                   </div>
                   <div className="ai-robot-badge" style={{ background: "#7c3aed" }}>
-                    <Bot size={13} /> GREEN_AI • ADMIN DESK
+                    <Bot size={13} /> {aiName} • ADMIN DESK
                   </div>
                 </div>
 
@@ -1775,7 +1793,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                       onClick={() => setChatMessages([
                         {
                           sender: "bot",
-                          text: "Conversation refreshed. GREEN_AI executive ledger is ready. How can I assist you?",
+                          text: `Conversation refreshed. ${aiName} executive ledger is ready. How can I assist you?`,
                           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
                           tag: "ADMIN EXECUTIVE DESK",
                         }
@@ -1804,14 +1822,14 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                       className={`ai-msg-row ${msg.sender === "bot" ? "ai-msg-row-bot" : "ai-msg-row-user"}`}
                     >
                       {msg.sender === "bot" ? (
-                        <img src="/ai_robot.png" alt="GREEN_AI" className="ai-msg-avatar" style={{ border: "2px solid #7c3aed" }} />
+                        <img src="/ai_robot.png" alt={aiName} className="ai-msg-avatar" style={{ border: "2px solid #7c3aed" }} />
                       ) : (
                         <img src={session?.img || "/admin_avatar.png"} alt={adminName} className="ai-msg-avatar" style={{ border: "2px solid #ea580c" }} />
                       )}
 
                       <div className="ai-msg-content-wrap">
                         <div className="ai-msg-sender-meta">
-                          <span>{msg.sender === "bot" ? "GREEN_AI" : adminName}</span>
+                          <span>{msg.sender === "bot" ? `${aiName} Executive` : adminName}</span>
                           {msg.sender === "bot" && (
                             <span
                               style={{
@@ -1830,7 +1848,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                         </div>
 
                         <div className={`ai-bubble ${msg.sender === "bot" ? "ai-bubble-bot" : "ai-bubble-user"}`}>
-                          <div style={{ whiteSpace: "pre-wrap" }}>{msg.text}</div>
+                          <MarkdownResponse content={msg.text} isUser={msg.sender === "user"} />
                         </div>
                       </div>
                     </div>
@@ -1839,7 +1857,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                   {/* Typing Indicator */}
                   {isTyping && (
                     <div className="ai-msg-row ai-msg-row-bot">
-                      <img src="/ai_robot.png" alt="GREEN_AI" className="ai-msg-avatar" style={{ border: "2px solid #7c3aed" }} />
+                      <img src="/ai_robot.png" alt={aiName} className="ai-msg-avatar" style={{ border: "2px solid #7c3aed" }} />
                       <div className="ai-typing-indicator">
                         <span className="ai-typing-dot" />
                         <span className="ai-typing-dot" />
@@ -1878,8 +1896,9 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                   <input
                     type="text"
                     className="ai-chat-text-input"
-                    placeholder="Ask GREEN_AI about attendance, admissions, finances, solar grid, compliance..."
+                    placeholder={`Ask ${aiName} about attendance, admissions, finances, solar grid, compliance...`}
                     value={chatInputText}
+                    disabled={isTyping}
                     onChange={(e) => setChatInputText(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -1890,8 +1909,9 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
                   <button
                     className="ai-chat-send-btn"
                     onClick={() => handleSendChatMessage()}
-                    title="Send instruction to GREEN_AI"
-                    style={{ background: "#7c3aed" }}
+                    disabled={isTyping}
+                    title={`Send instruction to ${aiName}`}
+                    style={{ background: isTyping ? "#94a3b8" : "#7c3aed", cursor: isTyping ? "not-allowed" : "pointer" }}
                   >
                     <Send size={15} />
                   </button>
@@ -1958,7 +1978,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <Play size={16} fill="#7c3aed" color="#7c3aed" />
                 <span style={{ color: "#ffffff", fontWeight: 700, fontSize: "0.85rem" }}>
-                  Green Valley Campus Aerial Architecture & Infrastructure
+                  {schoolName} Campus Aerial Architecture & Infrastructure
                 </span>
               </div>
               <button
@@ -1983,7 +2003,7 @@ export default function AdminDashboard({ onBackToKiosk }: DashboardProps) {
             <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, background: "#000000" }}>
               <iframe
                 src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1"
-                title="Green Valley Infrastructure Tour"
+                title={`${schoolName} Infrastructure Tour`}
                 style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen

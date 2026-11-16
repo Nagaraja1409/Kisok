@@ -1,7 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import AlumniDashboard from "@/components/AlumniDashboard";
+
+const AlumniDashboard = dynamic(() => import("@/components/AlumniDashboard"), {
+  ssr: false,
+});
 
 export default function AlumniPage() {
   const router = useRouter();

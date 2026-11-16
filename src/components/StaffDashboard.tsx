@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { getUserSession, clearUserSession } from "@/lib/session";
+import MarkdownResponse from "@/components/chat/MarkdownResponse";
+import { getUserSession, clearUserSession, getInstituteLogo, getInstituteName, getAiAssistantName } from "@/lib/session";
 import { SessionInfo } from "@/types/auth";
-import { sendGreenAiQuery } from "@/lib/greenAiClient";
-import RoleAIFeatureExplorer from "@/components/shared/RoleAIFeatureExplorer";
 import { CLIENT_API_ENDPOINTS } from "@/config/api";
 import {
   ArrowLeft,
@@ -187,7 +186,8 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           userid: s.UserId || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
           name: s.name,
           userName: s.username,
           empCode: s.Empid ? `EMP-${s.Empid}` : undefined,
@@ -227,7 +227,8 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           userid: s.UserId || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
         }),
       });
       if (res.ok) {
@@ -249,7 +250,8 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           emp_id: s.Empid || s.UserId || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
         }),
       });
       if (res.ok) {
@@ -271,7 +273,8 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userid: s.UserId || s.Empid || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
         }),
       });
       if (res.ok) {
@@ -298,7 +301,8 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
           asmay_id: s.ASMAY_Id || 0,
           userid: s.UserId || s.Empid || 0,
           year: s.ASMAY_Year || "",
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
         }),
       });
       if (res.ok) {
@@ -324,7 +328,8 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
           month: 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
+          MI_Subdomain: s.MI_Subdomain || CLIENT_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "",
         }),
       });
       if (res.ok) {
@@ -349,7 +354,7 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           asmay_id: s.ASMAY_Id || 0,
-          MI_Id: s.miid || 31,
+          MI_Id: s.miid || CLIENT_API_ENDPOINTS.DEFAULT_MI_ID,
           amst_id: 0,
           flag: "O",
         }),
@@ -424,7 +429,9 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
     session?.name ||
     session?.username ||
     "Faculty Member";
-  const schoolName = session?.initname || "Campus Portal";
+  const schoolName = session?.initname || getInstituteName();
+  const schoolLogo = session?.initlogo || getInstituteLogo();
+  const aiName = getAiAssistantName();
   const staffRole = session?.Rolename || "Faculty";
   const staffDept = staffProfile.department || (session?.Rolename ? `${session.Rolename} Department` : "Academic Department");
   const empId = staffProfile.empCode || (session?.Empid ? `EMP-${session.Empid}` : (session?.UserId ? `ID: ${session.UserId}` : ""));
@@ -512,7 +519,7 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
     {
       id: "msg-welcome-staff",
       sender: "bot",
-      text: "Hello! I'm GREEN_AI, your smart campus faculty assistant. I can help summarize your class schedule, check leave balances, attendance logs, or explore features for your role. How may I assist you today?",
+      text: `Welcome to **${getAiAssistantName()} Faculty Assistant**! 👋 I can help summarize your class schedule, check leave balances, attendance logs, or payslip records. How may I assist you today?`,
       time: "Just now",
       suggestions: [
         "What are my classes today?",
@@ -537,6 +544,7 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
   }, [chatMessages, currentScreen, isTyping]);
 
   const handleSendChatMessage = async (customQuery?: string) => {
+    if (isTyping) return;
     const query = (customQuery || chatInputText).trim();
     if (!query) return;
 
@@ -556,71 +564,21 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
     setIsTyping(true);
 
     try {
-      const uiContext = {
-        session,
-        staffName,
-        staffDept,
-        empId,
-        teachingSchedule: activeSchedule,
-        schedule: activeSchedule,
-        todayClasses,
-        leaveData,
-        punchData,
-        salaryData,
-        evaluationData: evaluationRoster,
-        events: staffEvents,
-        staffNotices,
-      };
-
-      const result = await sendGreenAiQuery({
-        message: query,
-        role: "teacher_staff",
-        userId: String(session?.UserId || session?.username || empId || "STAFF-01"),
-        sessionId: `kiosk_staff_${session?.UserId || session?.username || "session"}`,
-        uiContext,
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: query,
+          role: "staff",
+          history: chatMessages.slice(-6).map((m) => ({
+            role: m.sender === "user" ? "user" : "assistant",
+            content: m.text,
+          })),
+        }),
       });
 
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          id: `msg-bot-${Date.now()}`,
-          sender: "bot",
-          text: result.answer,
-          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-          suggestions:
-            result.followupSuggestions && result.followupSuggestions.length > 0
-              ? result.followupSuggestions
-              : [
-                  "What are my classes today?",
-                  "Show my leave balances",
-                  "Recent biometric punch records",
-                  "Show my latest salary details",
-                ],
-        },
-      ]);
-    } catch (e: any) {
-      console.warn("[StaffDashboard AI] Fallback to local response:", e);
-      let botResponse = "I have noted your request. You can check the respective tabs for detailed records.";
-      const q = query.toLowerCase();
-
-      if (q.includes("class") || q.includes("timetable") || q.includes("period") || q.includes("schedule")) {
-        botResponse =
-          todayClasses.length > 0
-            ? `📅 **Today's Teaching Schedule**: You have ${todayClasses.length} period(s) scheduled for today. Period 1 begins at ${todayClasses[0].time || "morning"} (${todayClasses[0].class}, ${todayClasses[0].room}).`
-            : `📅 **Today's Teaching Schedule**: No active teaching periods scheduled for today.`;
-      } else if (q.includes("leave") || q.includes("cl") || q.includes("balance")) {
-        botResponse = `🏖️ **Leave Balance Status**: You currently have **${leaveData.summary.casualLeaveBalance} Casual Leaves**, **${leaveData.summary.medicalLeaveBalance} Medical Leaves**, and **${leaveData.summary.earnedLeaveBalance} Earned Leaves** available.`;
-      } else if (q.includes("punch") || q.includes("biometric") || q.includes("attendance")) {
-        botResponse = latestPunch?.inTime
-          ? `⏱️ **Biometric Status**: Your check-in was recorded at **${latestPunch.inTime}** via ${punchTerminal}. Status: ${punchStatus}.`
-          : `⏱️ **Biometric Status**: No check-in records found for today.`;
-      } else if (q.includes("salary") || q.includes("payslip") || q.includes("pay")) {
-        botResponse = latestSalary?.net
-          ? `💳 **Salary Record**: ${latestSalary.month || "Latest"} salary: Net Pay ${netSalaryDisplay}, Gross: ${grossSalaryDisplay}.`
-          : `💳 **Salary Record**: No salary records published for current fiscal year.`;
-      } else if (q.includes("exam") || q.includes("mark") || q.includes("grade") || q.includes("score")) {
-        botResponse = `📊 **Student Evaluation**: Please navigate to the Student Evaluation tab to view class scorecards and marksheet submissions.`;
-      }
+      const data = await res.json();
+      const botResponse = data.answer || "I have noted your request. You can check the respective tabs for detailed records.";
 
       setChatMessages((prev) => [
         ...prev,
@@ -630,11 +588,21 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
           text: botResponse,
           time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
           suggestions: [
-            "What are my classes today?",
-            "Show my leave balances",
-            "Recent biometric punch records",
-            "Show my latest salary details",
+            "View Full Timetable",
+            "Open Leave Management",
+            "View Salary Slips",
+            "Check Punch Attendance",
           ],
+        },
+      ]);
+    } catch {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `msg-bot-${Date.now()}`,
+          sender: "bot",
+          text: "⚠️ Faculty AI Assistant is temporarily unavailable. Please verify your connection or try again shortly.",
+          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
     } finally {
@@ -649,22 +617,26 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
       <div className="kiosk-orb kiosk-orb-two" />
 
       {/* TOP COMMAND NAVBAR */}
-      <header className="dash-navbar">
-        <div className="command-brand" onClick={handleLogout} style={{ cursor: "pointer" }}>
-          <div className="command-mark" aria-hidden="true">
-            <svg width="34" height="34" viewBox="0 0 48 48" fill="none">
-              <path d="M24 7c4 4 10 6 14 3 0 8-7 13-14 14C17 23 10 18 10 10c4 3 10 1 14-3Z" fill="#ea580c" />
-              <path d="M24 24V11" stroke="#c2410c" strokeWidth="2.5" strokeLinecap="round" />
-              <path d="M5 36c7-4.5 13-3.5 19 1 6-4.5 12-5.5 19-1V18c-7-4.5-13-3.5-19 1-6-4.5-12-5.5-19-1v18Z" fill="#9a3412" />
-              <path d="M24 19v18" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
+      <header className="dash-navbar" suppressHydrationWarning>
+        <div className="command-brand" onClick={handleLogout} style={{ cursor: "pointer" }} suppressHydrationWarning>
+          <div className="command-mark" aria-hidden="true" suppressHydrationWarning>
+            <img
+              src={schoolLogo}
+              alt={`${schoolName} Logo`}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/mvps/brand/logo.png";
+              }}
+              suppressHydrationWarning
+            />
           </div>
-          <div>
-            <p className="command-kicker">
-              {session?.initname ? `${session.initname.toUpperCase()} • SMART CAMPUS` : "CAMPUS PORTAL"}
+          <div suppressHydrationWarning>
+            <p className="command-kicker" suppressHydrationWarning>
+              {session?.initname ? `${session.initname.toUpperCase()} • SMART CAMPUS` : `${schoolName.toUpperCase()} • SMART CAMPUS`}
             </p>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }}>
-              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "#1e293b", whiteSpace: "nowrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }} suppressHydrationWarning>
+              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "#1e293b", whiteSpace: "nowrap" }} suppressHydrationWarning>
                 {schoolName}
               </h1>
               <span
@@ -793,7 +765,7 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
             { id: "notices" as ActiveScreen, name: "Staff Circulars", icon: Megaphone },
             { id: "evaluation" as ActiveScreen, name: "Student Evaluation", icon: BarChart3 },
             { id: "profile" as ActiveScreen, name: "Faculty Profile", icon: User },
-            { id: "aispace" as ActiveScreen, name: "Campus AI", icon: Sparkles },
+            { id: "aispace" as ActiveScreen, name: aiName, icon: Sparkles },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = currentScreen === tab.id;
@@ -934,14 +906,25 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
                 title="Launch Faculty AI Space"
               >
                 <div className="hero-ai-robo-wrap">
-                  <img src="/ai_robot.png" alt="GREEN_AI" className="hero-ai-robo-img" />
+                  <img
+                    src="/ai_robot.png"
+                    alt="Campus AI"
+                    className="hero-ai-robo-img"
+                    style={{
+                      border: "2px solid #ea580c",
+                      borderRadius: "50%",
+                      width: "34px",
+                      height: "34px",
+                      objectFit: "cover",
+                    }}
+                  />
                   <span className="hero-ai-pulse-dot" />
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="hero-ai-kicker">
                     <Sparkles size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> AI SPACE
                   </div>
-                  <span className="hero-ai-action">Ask GREEN_AI →</span>
+                  <span className="hero-ai-action">Ask {aiName} →</span>
                 </div>
               </button>
             </div>
@@ -1655,7 +1638,7 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
                   boxShadow: "0 2px 6px rgba(234, 88, 12, 0.25)",
                 }}
               >
-                <Sparkles size={13} /> Ask Campus AI →
+                <Sparkles size={13} /> Ask {aiName} →
               </button>
             </div>
           </section>
@@ -2398,254 +2381,113 @@ export default function StaffDashboard({ onBackToKiosk }: DashboardProps) {
               </button>
 
               <div className="student-screen-title-area">
-                <div
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: "50%",
-                    overflow: "hidden",
-                    border: "2px solid #ea580c",
-                    boxShadow: "0 4px 14px rgba(234, 88, 12, 0.25)",
-                    flexShrink: 0,
-                    background: "#fff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <img src="/ai_robot.png" alt="GREEN_AI" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <div className="student-screen-icon-bubble" style={{ background: "#f5f3ff", color: "#7c3aed" }}>
+                  <Sparkles size={20} />
                 </div>
                 <div>
-                  <h2>GREEN_AI • Faculty AI Assistant &amp; Academic Workspace</h2>
-                  <p>Smart Campus AI Assistant • {staffName} ({staffDept})</p>
+                  <h2>Faculty {aiName} Teaching Assistant</h2>
+                  <p>Instant answers on Timetable, Leaves, Biometrics &amp; CBSE Guidelines</p>
                 </div>
               </div>
 
               <div className="student-screen-nav-tools">
-                <button
-                  className="student-refresh-btn"
-                  onClick={() =>
-                    setChatMessages([
-                      {
-                        id: "welcome-staff-reset",
-                        sender: "bot",
-                        text: "Faculty assistant refreshed! How can GREEN_AI assist with your schedule, leave balances, attendance logs, or student rosters?",
-                        time: "Just now",
-                        suggestions: [
-                          "What are my classes today?",
-                          "Show my leave balances",
-                          "Recent biometric punch records",
-                          "Show my latest salary details",
-                        ],
-                      },
-                    ])
-                  }
-                  title="Clear conversation"
-                  style={{ fontSize: "0.72rem", padding: "0.3rem 0.7rem" }}
-                >
-                  <RefreshCw size={13} /> Reset Chat
-                </button>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", fontWeight: 800, color: "#16a34a" }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#16a34a" }} />
-                  AI Online
+                <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#7c3aed" }}>
+                  ● {aiName} Engine Online
                 </div>
               </div>
             </div>
 
-            <div
-              className="student-screen-scroll-body"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "minmax(350px, 430px) 1fr",
-                gap: "1.2rem",
-                height: "100%",
-                minHeight: 0,
-                padding: "0.75rem 1.25rem",
-                overflow: "hidden",
-              }}
-            >
-              {/* LEFT ZONE: Mapped AI Feature Explorer */}
-              <RoleAIFeatureExplorer
-                role="teacher_staff"
-                onSelectPrompt={(prompt) => handleSendChatMessage(prompt)}
-              />
-
-              {/* RIGHT ZONE: GREEN_AI Interactive Chat Workspace */}
-              <div
-                className="student-screen-card"
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  overflow: "hidden",
-                  height: "100%",
-                  minHeight: 0,
-                  borderRadius: "20px",
-                  border: "1.5px solid rgba(254, 215, 170, 0.8)",
-                  boxShadow: "0 10px 32px rgba(15, 23, 42, 0.05)",
-                  background: "#ffffff",
-                }}
-              >
-                {/* Header */}
-                <div
-                  style={{
-                    padding: "0.75rem 1.15rem",
-                    background: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)",
-                    borderBottom: "1px solid rgba(254, 215, 170, 0.8)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    flexShrink: 0,
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
-                    <img
-                      src="/ai_robot.png"
-                      alt="GREEN_AI"
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: "50%",
-                        objectFit: "contain",
-                        background: "#fff",
-                        border: "1.5px solid #ea580c",
-                        padding: 2,
-                      }}
-                    />
-                    <div>
-                      <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1e293b" }}>
-                        Faculty AI Teaching Assistant &amp; Copilot
-                      </div>
-                      <div style={{ fontSize: "0.68rem", color: "#16a34a", fontWeight: 700 }}>
-                        ● Online • Grounded in Campus Faculty &amp; Academic Records
-                      </div>
+            <div className="student-screen-scroll-body" style={{ display: "flex", flexDirection: "column", height: "calc(100% - 70px)" }}>
+              <div style={{ flex: 1, overflowY: "auto", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                {chatMessages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    style={{
+                      alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
+                      maxWidth: "75%",
+                      background: msg.sender === "user" ? "#ea580c" : "#ffffff",
+                      color: msg.sender === "user" ? "#ffffff" : "#1e293b",
+                      padding: "0.85rem 1.15rem",
+                      borderRadius: msg.sender === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                      border: msg.sender === "user" ? "none" : "1px solid #e2e8f0",
+                      fontSize: "0.85rem",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <MarkdownResponse content={msg.text} isUser={msg.sender === "user"} />
+                    <div style={{ fontSize: "0.68rem", opacity: 0.7, marginTop: "4px", textAlign: msg.sender === "user" ? "right" : "left" }}>
+                      {msg.time}
                     </div>
+                    {msg.suggestions && msg.suggestions.length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "8px" }}>
+                        {msg.suggestions.map((sug, sIdx) => (
+                          <button
+                            key={sIdx}
+                            onClick={() => handleSendChatMessage(sug)}
+                            style={{
+                              background: "#f8fafc",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "9999px",
+                              padding: "4px 10px",
+                              fontSize: "0.72rem",
+                              fontWeight: 700,
+                              color: "#ea580c",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {sug}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div style={{ fontSize: "0.72rem", color: "#64748b" }}>
-                    Active Context: <strong style={{ color: "#ea580c" }}>{staffName}</strong>
+                ))}
+                {isTyping && (
+                  <div style={{ alignSelf: "flex-start", background: "#ffffff", padding: "0.6rem 1rem", borderRadius: "18px", border: "1.5px solid #fed7aa", fontSize: "0.8rem", color: "#ea580c", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                    <RefreshCw size={13} className="animate-spin" /> {aiName} is typing an answer...
                   </div>
-                </div>
+                )}
+                <div ref={chatMessagesEndRef} />
+              </div>
 
-                {/* Chat Messages Stream */}
-                <div
+              {/* AI INPUT BAR */}
+              <div style={{ padding: "0.85rem", background: "#ffffff", borderTop: "1px solid #e2e8f0", display: "flex", gap: "0.75rem" }}>
+                <input
+                  type="text"
+                  placeholder={`Ask ${aiName} about classes, leaves, salary or lesson plans...`}
+                  value={chatInputText}
+                  disabled={isTyping}
+                  onChange={(e) => setChatInputText(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSendChatMessage()}
                   style={{
                     flex: 1,
-                    padding: "1.25rem",
-                    overflowY: "auto",
+                    height: "44px",
+                    borderRadius: "9999px",
+                    border: "1.5px solid #cbd5e1",
+                    padding: "0 16px",
+                    fontSize: "0.85rem",
+                    outline: "none",
+                  }}
+                />
+                <button
+                  onClick={() => handleSendChatMessage()}
+                  disabled={isTyping}
+                  style={{
+                    background: isTyping ? "#94a3b8" : "#ea580c",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: "44px",
+                    height: "44px",
                     display: "flex",
-                    flexDirection: "column",
-                    gap: "0.85rem",
-                    background: "#f8fafc",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: isTyping ? "not-allowed" : "pointer",
                   }}
                 >
-                  {chatMessages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: msg.sender === "user" ? "flex-end" : "flex-start",
-                        maxWidth: "80%",
-                        alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
-                      }}
-                    >
-                      <div
-                        style={{
-                          padding: "0.75rem 1rem",
-                          borderRadius: "16px",
-                          background: msg.sender === "user" ? "#ea580c" : "#ffffff",
-                          color: msg.sender === "user" ? "#ffffff" : "#1e293b",
-                          fontSize: "0.82rem",
-                          lineHeight: 1.5,
-                          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-                          border: msg.sender === "user" ? "none" : "1px solid rgba(226, 232, 240, 0.9)",
-                          whiteSpace: "pre-wrap",
-                        }}
-                      >
-                        {msg.text}
-                      </div>
-                      <span style={{ fontSize: "0.65rem", color: "#94a3b8", marginTop: "3px", padding: "0 4px" }}>
-                        {msg.time}
-                      </span>
-
-                      {/* Suggestions Buttons */}
-                      {msg.suggestions && msg.suggestions.length > 0 && (
-                        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>
-                          {msg.suggestions.map((sug, sIdx) => (
-                            <button
-                              key={sIdx}
-                              onClick={() => handleSendChatMessage(sug)}
-                              style={{
-                                fontSize: "0.72rem",
-                                fontWeight: 700,
-                                color: "#ea580c",
-                                background: "#fff7ed",
-                                border: "1px solid rgba(254, 215, 170, 0.8)",
-                                padding: "3px 10px",
-                                borderRadius: "9999px",
-                                cursor: "pointer",
-                              }}
-                            >
-                              {sug}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  {isTyping && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#64748b", fontSize: "0.75rem" }}>
-                      <RefreshCw size={13} className="animate-spin" style={{ color: "#ea580c" }} />
-                      <span>GREEN_AI is typing an answer...</span>
-                    </div>
-                  )}
-                  <div ref={chatMessagesEndRef} />
-                </div>
-
-                {/* Quick Prompts Bar */}
-                <div className="ai-quick-prompts-bar">
-                  <span style={{ fontSize: "0.68rem", fontWeight: 800, color: "#94a3b8", flexShrink: 0 }}>
-                    Quick Prompts:
-                  </span>
-                  <button className="ai-quick-prompt-btn" onClick={() => handleSendChatMessage("What are my classes today?")}>
-                    📖 Today&apos;s Classes
-                  </button>
-                  <button className="ai-quick-prompt-btn" onClick={() => handleSendChatMessage("Show my leave balances")}>
-                    🏖️ Leave Balances
-                  </button>
-                  <button className="ai-quick-prompt-btn" onClick={() => handleSendChatMessage("Recent biometric punch records")}>
-                    ⏱️ Punch Records
-                  </button>
-                  <button className="ai-quick-prompt-btn" onClick={() => handleSendChatMessage("Show my latest salary details")}>
-                    💳 Salary Slip
-                  </button>
-                  <button className="ai-quick-prompt-btn" onClick={() => handleSendChatMessage("Upcoming staff meetings?")}>
-                    🗓️ Staff Meetings
-                  </button>
-                </div>
-
-                {/* Chat Input Bar */}
-                <div className="ai-chat-input-bar">
-                  <input
-                    type="text"
-                    className="ai-chat-text-input"
-                    placeholder="Ask GREEN_AI about your schedule, leaves, punch logs, or salary..."
-                    value={chatInputText}
-                    onChange={(e) => setChatInputText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleSendChatMessage();
-                      }
-                    }}
-                  />
-                  <button
-                    className="ai-chat-send-btn"
-                    onClick={() => handleSendChatMessage()}
-                    title="Send message to GREEN_AI"
-                  >
-                    <Send size={15} />
-                  </button>
-                </div>
+                  <Send size={18} />
+                </button>
               </div>
             </div>
           </section>

@@ -3,86 +3,158 @@
  * D:\Sushma\Kiosk\Old kiosk\vaps demo school\vaps demo school\App.config
  */
 
-const BASE_PORTAL = (process.env.PORTAL_URL || "https://madhuvanvatikacloud.com:21105/").replace(/\/+$/, "");
-const BASE_LOGIN = (process.env.LOGIN_URL || "https://madhuvanvatikacloud.com:21093/").replace(/\/+$/, "");
-const BASE_BDAY = (process.env.BDAY_URL || "https://madhuvanvatikacloud.com:21099/").replace(/\/+$/, "");
-const BASE_LEAVE = (process.env.LEAVE_URL || "https://madhuvanvatikacloud.com:21101/").replace(/\/+$/, "");
-const BASE_SPORTS = (process.env.SPORTS_URL || "https://madhuvanvatikacloud.com:21106/").replace(/\/+$/, "");
+function getEnv(key: string, fallback: string = ""): string {
+  if (typeof process !== "undefined" && process.env && process.env[key] && process.env[key]!.trim() !== "") {
+    return process.env[key]!.trim();
+  }
+  // Server-side fallback: read directly from .env files
+  if (typeof window === "undefined") {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const fs = require("fs");
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const path = require("path");
+      const files = [".env.local", ".env", ".env.development", ".env.example"];
+      for (const f of files) {
+        const full = path.join(process.cwd(), f);
+        if (fs.existsSync(full)) {
+          const lines = fs.readFileSync(full, "utf-8").split(/\r?\n/);
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+            const [k, ...rest] = trimmed.split("=");
+            if (k.trim() === key) {
+              const val = rest.join("=").trim().replace(/^[`'"]+|[`'"]+$/g, "");
+              if (val) return val;
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return fallback;
+}
+
+const BASE_PORTAL = (getEnv("PORTAL_URL") || "").replace(/\/+$/, "");
+const BASE_LOGIN = (getEnv("LOGIN_URL") || "").replace(/\/+$/, "");
+const BASE_BDAY = (getEnv("BDAY_URL") || "").replace(/\/+$/, "");
+const BASE_LEAVE = (getEnv("LEAVE_URL") || BASE_PORTAL || "").replace(/\/+$/, "");
+const BASE_SPORTS = (getEnv("SPORTS_URL") || "").replace(/\/+$/, "");
+
+function cleanUrl(val: string | undefined, fallback: string): string {
+  if (val && typeof val === "string" && val.trim() !== "") {
+    let clean = val.trim().replace(/^[`'"]+|[`'"]+$/g, "");
+    clean = clean.replace(/\$\{?PORTAL_URL\}?/g, BASE_PORTAL);
+    clean = clean.replace(/\$\{?LOGIN_URL\}?/g, BASE_LOGIN);
+    clean = clean.replace(/\$\{?LEAVE_URL\}?/g, BASE_LEAVE);
+    return clean;
+  }
+  return fallback;
+}
 
 // External Backend VAPS APIs (Invoked server-side via Next.js Route Handlers)
 export const VAPS_API_ENDPOINTS = {
   // Base URLs
-  LOGIN_URL: process.env.LOGIN_URL || "https://madhuvanvatikacloud.com:21093/",
-  PORTAL_URL: process.env.PORTAL_URL || "https://madhuvanvatikacloud.com:21105/",
-  BDAY_URL: process.env.BDAY_URL || "https://madhuvanvatikacloud.com:21099/",
-  LEAVE_URL: process.env.LEAVE_URL || "https://madhuvanvatikacloud.com:21101/",
-  SPORTS_URL: process.env.SPORTS_URL || "https://madhuvanvatikacloud.com:21106/",
-  DEFAULT_MI_ID: process.env.LOGIN_MI_ID || "31",
-  DEFAULT_MO_ID: "2",
+  LOGIN_URL: getEnv("LOGIN_URL") || BASE_LOGIN,
+  PORTAL_URL: getEnv("PORTAL_URL") || BASE_PORTAL,
+  BDAY_URL: getEnv("BDAY_URL") || BASE_BDAY,
+  LEAVE_URL: getEnv("LEAVE_URL") || BASE_LEAVE,
+  SPORTS_URL: getEnv("SPORTS_URL") || BASE_SPORTS,
+  DEFAULT_MI_ID: getEnv("LOGIN_MI_ID") || getEnv("NEXT_PUBLIC_LOGIN_MI_ID") || getEnv("MI_ID") || getEnv("MI_Id") || "",
+  DEFAULT_MI_SUBDOMAIN: getEnv("MI_Subdomain") || getEnv("MI_SUBDOMAIN") || getEnv("NEXT_PUBLIC_MI_SUBDOMAIN") || "",
+  DEFAULT_ASMAY_ID: getEnv("LOGIN_ASMAY_ID") || getEnv("NEXT_PUBLIC_LOGIN_ASMAY_ID") || getEnv("ASMAY_ID") || getEnv("ASMAY_Id") || getEnv("Y_ID") || "",
+  DEFAULT_ASMAY_YEAR: getEnv("LOGIN_ASMAY_YEAR") || getEnv("NEXT_PUBLIC_LOGIN_ASMAY_YEAR") || getEnv("ASMAY_YEAR") || "",
+  DEFAULT_MO_ID: getEnv("MO_ID") || getEnv("MO_Id") || "",
 
   // Authentication & Smart Card Punch
-  LOGIN_FACADE: process.env.API_VAPS_LOGIN || `${BASE_LOGIN}/api/LoginFacade/`,
+  LOGIN_FACADE: cleanUrl(getEnv("API_VAPS_LOGIN"), `${BASE_LOGIN}/api/LoginFacade/`),
   SMARTCARD_PUNCH: `${BASE_LOGIN}/api/LoginFacade/KioskStudentSmartCardPunch/`,
 
-  // Student Modules
-  STUDENT_DETAILS: `${BASE_PORTAL}/api/StudentDashboardFacade/Getdetails/`,
-  STUDENT_ATTENDANCE: `${BASE_PORTAL}/api/StudentDashboardFacade/Getdetails/`,
-  STUDENT_FEES: `${BASE_PORTAL}/api/CumulativeFeeAnalysisFacade/getloaddata/`,
-  STUDENT_EVENTS: `${BASE_PORTAL}/api/COEFacade/getcoedata/`,
-  STUDENT_NOTICES: `${BASE_PORTAL}/api/StudentDashboardFacade/onclick_notice/`,
-  STUDENT_HOMEWORK: `${BASE_PORTAL}/api/StudentDashboardFacade/Getdetails/`,
-  STUDENT_TIMETABLE: process.env.API_VAPS_STUDENT_TIMETABLE || `${BASE_PORTAL}/api/Student_TTFacade/getStudentTT/`,
-  EXAM_LIST: process.env.API_VAPS_EXAM_LIST || `${BASE_PORTAL}/api/ExamReportFacade/getexamdata/`,
-  EXAM_SUBJECTS: `${BASE_PORTAL}/api/CumulativeSubjectFacade/getSubjectsdata/`,
-  EXAM_DETAILS: process.env.API_VAPS_EXAM_DETAILS || `${BASE_PORTAL}/api/ExamReportFacade/StudentExamDetails/`,
+  // Student Modules (Env-driven with automatic fallback)
+  STUDENT_DETAILS: cleanUrl(getEnv("API_VAPS_STUDENT_DETAILS"), `${BASE_PORTAL}/api/StudentDashboardFacade/Getdetails/`),
+  STUDENT_ATTENDANCE: cleanUrl(getEnv("API_VAPS_STUDENT_ATTENDANCE"), `${BASE_PORTAL}/api/StudentDashboardFacade/Getdetails/`),
+  STUDENT_FEES: cleanUrl(getEnv("API_VAPS_STUDENT_FEES"), `${BASE_PORTAL}/api/CumulativeFeeAnalysisFacade/getloaddata/`),
+  STUDENT_EVENTS: cleanUrl(getEnv("API_VAPS_STUDENT_EVENTS"), `${BASE_PORTAL}/api/COEFacade/getcoedata/`),
+  STUDENT_NOTICES: cleanUrl(getEnv("API_VAPS_STUDENT_NOTICES"), `${BASE_PORTAL}/api/StudentDashboardFacade/onclick_notice/`),
+  STUDENT_HOMEWORK: cleanUrl(getEnv("API_VAPS_STUDENT_HOMEWORK"), `${BASE_PORTAL}/api/StudentDashboardFacade/Getdetails/`),
+  STUDENT_TIMETABLE: cleanUrl(getEnv("API_VAPS_STUDENT_TIMETABLE"), `${BASE_PORTAL}/api/Student_TTFacade/getStudentTT/`),
+  EXAM_LIST: cleanUrl(getEnv("API_VAPS_EXAM_LIST"), `${BASE_PORTAL}/api/ExamReportFacade/getexamdata/`),
+  EXAM_SUBJECTS: cleanUrl(getEnv("API_VAPS_EXAM_SUBJECTS"), `${BASE_PORTAL}/api/CumulativeSubjectFacade/getSubjectsdata/`),
+  EXAM_DETAILS: cleanUrl(getEnv("API_VAPS_EXAM_DETAILS"), `${BASE_PORTAL}/api/ExamReportFacade/StudentExamDetails/`),
 
-  // Staff Modules
-  EMPLOYEE_DETAILS: `${BASE_PORTAL}/api/EmployeePtalFacade/getdata/`,
-  EMPLOYEE_TIMETABLE: `${BASE_PORTAL}/api/EmployeeTTFacade/getdata/`,
-  EMPLOYEE_LEAVE: `${BASE_LEAVE}/api/LeaveReportFacade/get_report/`,
-  EMPLOYEE_PUNCH_LOG: `${BASE_PORTAL}/api/EmployeePunchAttendenceFacade/getrpt/`,
-  EMPLOYEE_SALARY: `${BASE_PORTAL}/api/EmployeeSalaryDetailsFacade/getdaily_data/`,
-  EMPLOYEE_SALARY_YEARS: `${BASE_PORTAL}/api/EmployeeSalaryDetailsFacade/getdata/`,
-  STAFF_COE: `${BASE_PORTAL}/api/COEFacade/getcoedata/`,
+  // Staff Modules (All read from env file only)
+  EMPLOYEE_DETAILS: cleanUrl(
+    getEnv("API_VAPS_STAFF_DETAILS") || getEnv("API_VAPS_EMPLOYEE_DETAILS"),
+    `${BASE_PORTAL}/api/EmployeePtalFacade/getdata/`
+  ),
+  EMPLOYEE_TIMETABLE: cleanUrl(
+    getEnv("API_VAPS_STAFF_TIMETABLE") || getEnv("API_VAPS_EMPLOYEE_TIMETABLE"),
+    `${BASE_PORTAL}/api/EmployeeTTFacade/getdata/`
+  ),
+  EMPLOYEE_LEAVE: cleanUrl(
+    getEnv("API_VAPS_STAFF_LEAVE") || getEnv("API_VAPS_EMPLOYEE_LEAVE"),
+    `${BASE_LEAVE}/api/LeaveReportFacade/get_report/`
+  ),
+  EMPLOYEE_PUNCH_LOG: cleanUrl(
+    getEnv("API_VAPS_STAFF_PUNCH_LOG") || getEnv("API_VAPS_EMPLOYEE_PUNCH_LOG"),
+    `${BASE_PORTAL}/api/EmployeePunchAttendenceFacade/getrpt/`
+  ),
+  EMPLOYEE_SALARY: cleanUrl(
+    getEnv("API_VAPS_STAFF_SALARY") || getEnv("API_VAPS_EMPLOYEE_SALARY"),
+    `${BASE_PORTAL}/api/EmployeeSalaryDetailsFacade/getdaily_data/`
+  ),
+  EMPLOYEE_SALARY_YEARS: cleanUrl(
+    getEnv("API_VAPS_STAFF_SALARY_YEARS"),
+    `${BASE_PORTAL}/api/EmployeeSalaryDetailsFacade/getdata/`
+  ),
+  STAFF_COE: cleanUrl(
+    getEnv("API_VAPS_STAFF_EVENTS") || getEnv("API_VAPS_STAFF_COE"),
+    `${BASE_PORTAL}/api/COEFacade/getcoedata/`
+  ),
 
   // Public Campus Kiosk Modules
-  STUDENT_BIRTHDAYS: `${BASE_BDAY}/api/BirthDayFacade/BindStaff/`,
-  STAFF_BIRTHDAYS: `${BASE_BDAY}/api/BirthDayFacade/getstaffdetails/`,
-  SPORTS_WINNERS: `${BASE_SPORTS}/api/EventsStudentRecordFacade/KioskSportsWinners/`,
-  EXAM_TOPPERS: `${BASE_PORTAL}/api/ExamToppersListFacade/showreport/`,
-  KIOSK_GALLERY: `${BASE_PORTAL}/api/IVRM_GalleryFacade/kioskvideo/`,
+  STUDENT_BIRTHDAYS: cleanUrl(getEnv("API_VAPS_STUDENT_BIRTHDAYS"), `${BASE_BDAY}/api/BirthDayFacade/BindStaff/`),
+  STAFF_BIRTHDAYS: cleanUrl(getEnv("API_VAPS_STAFF_BIRTHDAYS"), `${BASE_BDAY}/api/BirthDayFacade/getstaffdetails/`),
+  SPORTS_WINNERS: cleanUrl(getEnv("API_VAPS_SPORTS_WINNERS"), `${BASE_SPORTS}/api/EventsStudentRecordFacade/KioskSportsWinners/`),
+  EXAM_TOPPERS: cleanUrl(getEnv("API_VAPS_EXAM_TOPPERS"), `${BASE_PORTAL}/api/ExamToppersListFacade/showreport/`),
+  KIOSK_GALLERY: cleanUrl(getEnv("API_VAPS_KIOSK_GALLERY"), `${BASE_PORTAL}/api/IVRM_GalleryFacade/kioskvideo/`),
 };
 
 // Client-Side Next.js API Routes (Invoked from UI Dashboards & Components)
 export const CLIENT_API_ENDPOINTS = {
   // Auth
-  LOGIN: process.env.NEXT_PUBLIC_API_LOGIN || "/api/login",
+  LOGIN: getEnv("NEXT_PUBLIC_API_LOGIN", "/api/login"),
   SMARTCARD_PUNCH: "/api/kiosk/smartcard",
 
   // Student Routes
   DETAILS: "/api/student/details",
-  ATTENDANCE: process.env.NEXT_PUBLIC_API_ATTENDANCE || "/api/student/attendance",
+  ATTENDANCE: getEnv("NEXT_PUBLIC_API_ATTENDANCE", "/api/student/attendance"),
   FEES: "/api/student/fees",
   EVENTS: "/api/student/events",
   NOTICES: "/api/student/notice",
   HOMEWORK: "/api/student/homework",
-  TIMETABLE: process.env.NEXT_PUBLIC_API_TIMETABLE || "/api/student/timetable",
-  EXAM: process.env.NEXT_PUBLIC_API_EXAM || "/api/student/exam",
+  TIMETABLE: getEnv("NEXT_PUBLIC_API_TIMETABLE", "/api/student/timetable"),
+  EXAM: getEnv("NEXT_PUBLIC_API_EXAM", "/api/student/exam"),
   EXAM_OVERALL: "/api/student/exam-overall",
 
-  // Staff Routes
-  STAFF_DETAILS: "/api/staff/details",
-  STAFF_TIMETABLE: "/api/staff/timetable",
-  STAFF_LEAVE: "/api/staff/leave",
-  STAFF_PUNCH_LOG: "/api/staff/punch-log",
-  STAFF_SALARY: "/api/staff/salary",
-  STAFF_EVENTS: "/api/staff/events",
+  // Staff Routes (Read from env file only)
+  STAFF_DETAILS: getEnv("NEXT_PUBLIC_API_STAFF_DETAILS", "/api/staff/details"),
+  STAFF_TIMETABLE: getEnv("NEXT_PUBLIC_API_STAFF_TIMETABLE", "/api/staff/timetable"),
+  STAFF_LEAVE: getEnv("NEXT_PUBLIC_API_STAFF_LEAVE", "/api/staff/leave"),
+  STAFF_PUNCH_LOG: getEnv("NEXT_PUBLIC_API_STAFF_PUNCH_LOG", "/api/staff/punch-log"),
+  STAFF_SALARY: getEnv("NEXT_PUBLIC_API_STAFF_SALARY", "/api/staff/salary"),
+  STAFF_EVENTS: getEnv("NEXT_PUBLIC_API_STAFF_EVENTS", "/api/staff/events"),
 
   // Kiosk Home Features
   KIOSK_BIRTHDAYS: "/api/kiosk/birthdays",
   KIOSK_SPORTS: "/api/kiosk/sports",
   KIOSK_TOPPERS: "/api/kiosk/toppers",
 
-  DEFAULT_SERVER_URL: process.env.NEXT_PUBLIC_LOGIN_URL || "https://madhuvanvatikacloud.com:21093/",
-  DEFAULT_MI_ID: process.env.NEXT_PUBLIC_LOGIN_MI_ID || "31",
+  DEFAULT_SERVER_URL: getEnv("NEXT_PUBLIC_LOGIN_URL") || getEnv("LOGIN_URL") || "",
+  DEFAULT_MI_ID: getEnv("NEXT_PUBLIC_LOGIN_MI_ID") || getEnv("LOGIN_MI_ID") || getEnv("MI_ID") || getEnv("MI_Id") || "",
+  DEFAULT_MI_SUBDOMAIN: getEnv("NEXT_PUBLIC_MI_SUBDOMAIN") || getEnv("MI_Subdomain") || getEnv("MI_SUBDOMAIN") || "",
+  DEFAULT_ASMAY_ID: getEnv("NEXT_PUBLIC_LOGIN_ASMAY_ID") || getEnv("LOGIN_ASMAY_ID") || getEnv("ASMAY_ID") || getEnv("ASMAY_Id") || getEnv("Y_ID") || "",
+  DEFAULT_ASMAY_YEAR: getEnv("NEXT_PUBLIC_LOGIN_ASMAY_YEAR") || getEnv("LOGIN_ASMAY_YEAR") || getEnv("ASMAY_YEAR") || "",
 };

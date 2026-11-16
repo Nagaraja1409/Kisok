@@ -27,9 +27,10 @@ export async function POST(req: NextRequest) {
       asmS_Id = 0,
     } = body;
 
-    let finalAsmayId = Number(asmay_id || 0);
-    const instId = Number(MI_Id || 31);
+    let finalAsmayId = Number(asmay_id || VAPS_API_ENDPOINTS.DEFAULT_ASMAY_ID || 0);
+    const instId = Number(MI_Id || VAPS_API_ENDPOINTS.DEFAULT_MI_ID || 0);
     const studentId = Number(amst_id || 0);
+    const miSubdomain = (body.MI_Subdomain || body.mI_Subdomain || VAPS_API_ENDPOINTS.DEFAULT_MI_SUBDOMAIN || "").trim();
 
     const base = portalUrl
       ? portalUrl.trim().replace(/\/+$/, "")
@@ -39,16 +40,21 @@ export async function POST(req: NextRequest) {
     if (finalAsmayId <= 0 && studentId > 0) {
       try {
         const detailsEndpoint = `${base}/api/StudentDashboardFacade/Getdetails/`;
+        const autoPayload: any = {
+          asmay_id: 0,
+          empid: 0,
+          amst_id: studentId,
+          MI_Id: instId,
+          roleid: 3,
+        };
+        if (miSubdomain) {
+          autoPayload.MI_Subdomain = miSubdomain;
+          autoPayload.mI_Subdomain = miSubdomain;
+        }
         const detRes = await fetch(detailsEndpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            asmay_id: 0,
-            empid: 0,
-            amst_id: studentId,
-            MI_Id: instId,
-            roleid: 3,
-          }),
+          body: JSON.stringify(autoPayload),
           signal: AbortSignal.timeout(6000),
         });
         if (detRes.ok) {
@@ -67,11 +73,15 @@ export async function POST(req: NextRequest) {
     const getSubjectUrl = `${base}/api/CumulativeSubjectFacade/getSubjectsdata/`;
     const detailsUrl = `${base}/api/ExamReportFacade/StudentExamDetails/`;
 
-    const commonPayload = {
+    const commonPayload: any = {
       asmay_id: finalAsmayId,
       amst_id: studentId,
       MI_Id: instId,
     };
+    if (miSubdomain) {
+      commonPayload.MI_Subdomain = miSubdomain;
+      commonPayload.mI_Subdomain = miSubdomain;
+    }
 
     // Parallel fetch exam list and subjects list
     const [examListRes, subjListRes] = await Promise.allSettled([

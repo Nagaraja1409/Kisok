@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { sendGreenAiQuery } from "@/lib/greenAiClient";
-import RoleAIFeatureExplorer from "@/components/shared/RoleAIFeatureExplorer";
+import MarkdownResponse from "@/components/chat/MarkdownResponse";
+import { getInstituteLogo, getInstituteName, getAiAssistantName } from "@/lib/session";
 import {
   ArrowLeft,
   ArrowRight,
@@ -245,8 +245,8 @@ const CBS_FAQS = [
     a: "Annual fees range from ₹48,000 (Pre-KG) to ₹84,000 (Senior Secondary STEM), payable in 3 term installments. Transport and canteen are optional and route-based.",
   },
   {
-    q: "Is Green Valley Public School affiliated to CBSE?",
-    a: "Yes! Green Valley Public School is permanently affiliated to CBSE New Delhi (Affiliation No. 1930421 • School Code: 45210), maintaining NAAC Grade A++ benchmarking.",
+    q: "Is the school officially affiliated and accredited?",
+    a: "Yes! Our institution is officially affiliated and accredited, maintaining NAAC Grade A++ benchmarking.",
   },
   {
     q: "Can I meet the Principal or Admission Director today?",
@@ -254,11 +254,11 @@ const CBS_FAQS = [
   },
   {
     q: "What safety protocols and transport routes are available?",
-    a: "Our campus operates 32 GPS-tracked school buses with speed governors, CCTV cameras, female attendants, and real-time parent app telemetry covering 34 routes.",
+    a: "Our campus operates GPS-tracked school buses with speed governors, CCTV cameras, female attendants, and real-time parent app telemetry.",
   },
   {
     q: "Are there concessions or scholarship tests for merit students?",
-    a: "Yes. The Green Valley Merit Scholarship offers up to 50% tuition waiver for students scoring 90%+ in the annual scholarship assessment or state-level sports achievers.",
+    a: "Yes. Our Merit Scholarship offers up to 50% tuition waiver for students scoring 90%+ in the annual scholarship assessment or state-level sports achievers.",
   },
 ];
 
@@ -285,14 +285,15 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
   const [hostAlertSent, setHostAlertSent] = useState(false);
   const [hostAlertTimer, setHostAlertTimer] = useState<string | null>(null);
 
-  // GREEN_AI chatbot
+  // Ask Campus AI chatbot
   const [chatMessages, setChatMessages] = useState<Array<{ sender: "user" | "bot"; text: string }>>([
     {
       sender: "bot",
-      text: "Hello! I'm GREEN_AI, your smart campus assistant. I can help you explore the features available for your role. What would you like to do?",
+      text: `Namaste! Welcome to ${getInstituteName()}. I am **${getAiAssistantName()}**, your AI Campus Guide. Feel free to ask about admissions, fee structure, campus buildings, or timings!`,
     },
   ]);
   const [chatInput, setChatInput] = useState("");
+  const [isChatTyping, setIsChatTyping] = useState(false);
 
   // Load localStorage data safely
   useEffect(() => {
@@ -304,7 +305,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
           setVisitorSession(parsed);
         }
       }
-    } catch {}
+    } catch { }
   }, []);
 
   // Clock & Fullscreen synchronizer
@@ -320,7 +321,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
+      document.documentElement.requestFullscreen().catch(() => { });
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen();
@@ -329,42 +330,43 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
   };
 
   const handleSendChat = async (queryText: string) => {
+    if (isChatTyping) return;
     const trimmed = queryText.trim();
     if (!trimmed) return;
     const userMsg = trimmed;
     setChatMessages((prev) => [...prev, { sender: "user", text: userMsg }]);
     setChatInput("");
+    setIsChatTyping(true);
 
     try {
-      const uiContext = {
-        campusBuildings: CAMPUS_BUILDINGS,
-        visitorName: visitorSession.visitorName,
-        visitorPhone: visitorSession.visitorPhone,
-        admission: {
-          enquiry_ref: "BCE/ENQ/2026/114",
-          status: "Under Review",
-          counselling: "Contact Admissions Desk Block A Room 104",
-        },
-      };
-
-      const result = await sendGreenAiQuery({
-        message: userMsg,
-        role: "visitor_applicant",
-        userId: visitorSession.visitorName ? visitorSession.visitorName.replace(/\s+/g, "_") : "Visitor",
-        sessionId: `kiosk_visitor_${Date.now()}`,
-        uiContext,
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMsg,
+          role: "visitor",
+          history: chatMessages.slice(-6).map((m) => ({
+            role: m.sender === "user" ? "user" : "assistant",
+            content: m.text,
+          })),
+        }),
       });
 
-      setChatMessages((prev) => [...prev, { sender: "bot", text: result.answer }]);
-    } catch (e: any) {
-      console.error("[VisitorDashboard AI] Error:", e);
+      const data = await res.json();
+      const reply =
+        data.answer ||
+        "Thank you for inquiring! For personalized assistance, our Reception desk is open in Central Gate 1 (Ext. 101) or you can visit Counter 104 in Block A.";
+      setChatMessages((prev) => [...prev, { sender: "bot", text: reply }]);
+    } catch {
       setChatMessages((prev) => [
         ...prev,
         {
           sender: "bot",
-          text: "Welcome to Green Valley Public School! Our Front Office desk is open in Central Gate 1 (Ext. 101) or Counter 104 in Block A.",
+          text: "⚠️ Campus AI Assistant is temporarily unavailable. Please visit Reception Desk at Counter 104 in Block A.",
         },
       ]);
+    } finally {
+      setIsChatTyping(false);
     }
   };
 
@@ -382,6 +384,10 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
   /* ─────────────────────────────────────────────────────────────
      RENDER
   ───────────────────────────────────────────────────────────── */
+  const schoolLogo = getInstituteLogo();
+  const schoolName = getInstituteName();
+  const aiName = getAiAssistantName();
+
   return (
     <div className="dashboard-page">
       {/* Ambient background orbs matching Student/Staff software theme */}
@@ -389,21 +395,25 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
       <div className="kiosk-orb kiosk-orb-two" />
 
       {/* TOP COMMAND NAVBAR (Identical layout & alignment to Student/Staff) */}
-      <header className="dash-navbar">
-        <div className="command-brand" onClick={onBackToKiosk} style={{ cursor: "pointer" }}>
-          <div className="command-mark" aria-hidden="true">
-            <svg width="34" height="34" viewBox="0 0 48 48" fill="none">
-              <path d="M24 7c4 4 10 6 14 3 0 8-7 13-14 14C17 23 10 18 10 10c4 3 10 1 14-3Z" fill="#ea580c" />
-              <path d="M24 24V11" stroke="#c2410c" strokeWidth="2.5" strokeLinecap="round" />
-              <path d="M5 36c7-4.5 13-3.5 19 1 6-4.5 12-5.5 19-1V18c-7-4.5-13-3.5-19 1-6-4.5-12-5.5-19-1v18Z" fill="#9a3412" />
-              <path d="M24 19v18" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
+      <header className="dash-navbar" suppressHydrationWarning>
+        <div className="command-brand" onClick={onBackToKiosk} style={{ cursor: "pointer" }} suppressHydrationWarning>
+          <div className="command-mark" aria-hidden="true" suppressHydrationWarning>
+            <img
+              src={schoolLogo}
+              alt={`${schoolName} Logo`}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/mvps/brand/logo.png";
+              }}
+              suppressHydrationWarning
+            />
           </div>
-          <div>
-            <p className="command-kicker">GREEN VALLEY • SMART CAMPUS</p>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }}>
-              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "#1e293b", whiteSpace: "nowrap" }}>
-                Green Valley Public School
+          <div suppressHydrationWarning>
+            <p className="command-kicker" suppressHydrationWarning>{schoolName.toUpperCase()} • SMART CAMPUS</p>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }} suppressHydrationWarning>
+              <h1 style={{ margin: 0, fontFamily: "Outfit, sans-serif", fontSize: "1.15rem", fontWeight: 800, color: "#1e293b", whiteSpace: "nowrap" }} suppressHydrationWarning>
+                {schoolName}
               </h1>
               <span
                 style={{
@@ -483,7 +493,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
         <div className="ticker-content">
           <div className="ticker-item">
             <span className="ticker-tag">CAMPUS VISITOR NOTICE:</span>
-            <span>Welcome to Green Valley Public School! Please keep your digital badge visible on campus premises.</span>
+            <span>Welcome to {schoolName}! Please keep your digital badge visible on campus premises.</span>
           </div>
           <div className="ticker-item">
             <span className="ticker-tag" style={{ color: "#ea580c" }}>ADMISSIONS 2026-27:</span>
@@ -579,17 +589,17 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
                 type="button"
                 onClick={() => setCurrentScreen("ask-cbs")}
                 className="hero-ai-capsule-btn"
-                title="Launch Visitor GREEN_AI Assistant"
+                title="Launch Visitor AI Assistant"
               >
                 <div className="hero-ai-robo-wrap">
-                  <img src="/ai_robot.png" alt="GREEN_AI" className="hero-ai-robo-img" />
+                  <img src="/ai_robot.png" alt={aiName} className="hero-ai-robo-img" />
                   <span className="hero-ai-pulse-dot" />
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="hero-ai-kicker">
                     <Sparkles size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> AI HELPDESK
                   </div>
-                  <span className="hero-ai-action">Ask GREEN_AI →</span>
+                  <span className="hero-ai-action">Ask {aiName} →</span>
                 </div>
               </button>
             </div>
@@ -892,11 +902,11 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
               </div>
             </div>
 
-            {/* CONTAINER 6: 💬 GREEN_AI — AI VISITOR HELPDESK */}
+            {/* CONTAINER 6: 💬 ASK CBS — AI VISITOR HELPDESK */}
             <div
               className="student-hub-card"
               onClick={() => setCurrentScreen("ask-cbs")}
-              title="Click to launch GREEN_AI Helpdesk"
+              title="Click to launch Ask CBS AI Helpdesk"
             >
               <div className="student-hub-card-header">
                 <div className="student-card-title-group">
@@ -904,8 +914,8 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
                     <Sparkles size={19} />
                   </div>
                   <div className="student-card-headings">
-                    <h3>GREEN_AI</h3>
-                    <span>Your Smart Campus AI Assistant</span>
+                    <h3>Ask CBS — AI Helpdesk</h3>
+                    <span>Instant Campus Q&amp;A Assistant</span>
                   </div>
                 </div>
                 <span
@@ -943,13 +953,13 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
                   ))}
                 </div>
                 <div style={{ background: "#f8fafc", padding: "0.4rem 0.65rem", borderRadius: "10px", border: "1px solid #e2e8f0", fontSize: "0.75rem", color: "#64748b" }}>
-                  💬 Ask anything about Green Valley Public School for instant automated helpdesk guidance.
+                  💬 Ask anything about {schoolName} for instant automated helpdesk guidance.
                 </div>
               </div>
 
               <div className="student-hub-card-footer">
                 <span className="student-card-view-btn">
-                  <span>Launch GREEN_AI</span>
+                  <span>Launch AI Assistant</span>
                   <ArrowRight size={13} />
                 </span>
               </div>
@@ -1077,7 +1087,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
                   boxShadow: "0 2px 6px rgba(234, 88, 12, 0.25)",
                 }}
               >
-                <Sparkles size={13} /> Ask GREEN_AI →
+                <Sparkles size={13} /> Ask CBS AI →
               </button>
             </div>
           </section>
@@ -1100,7 +1110,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
               </div>
               <div>
                 <h2>Campus Map &amp; Interactive Wayfinder</h2>
-                <p>40-Acre Campus Building Navigator &amp; Floor Guide • Green Valley Public School</p>
+                <p>Campus Building Navigator &amp; Floor Guide • {schoolName}</p>
               </div>
             </div>
 
@@ -1260,7 +1270,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
                 })()}
 
                 <div style={{ background: "#f0fdf4", border: "1.2px solid rgba(187, 247, 208, 0.8)", borderRadius: "14px", padding: "0.85rem", fontSize: "0.76rem", color: "#15803d", lineHeight: 1.4 }}>
-                  <strong>Visitor Wayfinding Tip:</strong> Green Valley campus follows color-coded path markings. Orange trails lead to Admissions &amp; Admin; Teal trails lead to STEM labs.
+                  <strong>Visitor Wayfinding Tip:</strong> {schoolName} campus follows color-coded path markings. Orange trails lead to Admissions &amp; Admin; Teal trails lead to STEM labs.
                 </div>
               </div>
             </div>
@@ -1427,7 +1437,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
               >
                 <div style={{ background: "linear-gradient(135deg, #ea580c 0%, #c2410c 100%)", color: "#ffffff", padding: "1.25rem", textAlign: "center" }}>
                   <div style={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", opacity: 0.9 }}>
-                    GREEN VALLEY PUBLIC SCHOOL • VISITOR BADGE
+                    {schoolName.toUpperCase()} • VISITOR BADGE
                   </div>
                   <div style={{ fontFamily: "Outfit, sans-serif", fontSize: "1.3rem", fontWeight: 900, marginTop: "2px" }}>
                     OFFICIAL GUEST PASS
@@ -1707,7 +1717,7 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
       )}
 
       {/* ========================================================
-          VIEW 6: DEDICATED FULL SCREEN — GREEN_AI HELPDESK
+          VIEW 6: DEDICATED FULL SCREEN — ASK CBS AI HELPDESK
           ======================================================== */}
       {currentScreen === "ask-cbs" && (
         <section className="student-fullscreen-page">
@@ -1721,8 +1731,8 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
                 <Sparkles size={20} />
               </div>
               <div>
-                <h2>GREEN_AI — Campus AI Helpdesk</h2>
-                <p>Your Smart Campus AI Assistant</p>
+                <h2>Ask CBS — Campus AI Helpdesk</h2>
+                <p>Instant Answers on Admissions, Fees, Campus Navigation &amp; Visiting Hours</p>
               </div>
             </div>
 
@@ -1737,44 +1747,52 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
             </div>
           </div>
 
-          <div
-            className="student-screen-scroll-body"
-            style={{
-              padding: "0.75rem 1.25rem",
-              display: "grid",
-              gridTemplateColumns: "minmax(350px, 430px) 1fr",
-              gap: "1.2rem",
-              alignItems: "stretch",
-              height: "100%",
-              minHeight: 0,
-              overflow: "hidden",
-            }}
-          >
-            {/* Left: Role AI Feature Explorer */}
-            <RoleAIFeatureExplorer
-              role="visitor_applicant"
-              onSelectPrompt={(prompt) => handleSendChat(prompt)}
-            />
+          <div className="student-screen-scroll-body" style={{ padding: "1rem 1.5rem", overflowY: "auto", display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "1.2rem", alignItems: "start" }}>
+            {/* Left: Quick FAQs */}
+            <div style={{ background: "#ffffff", borderRadius: "18px", border: "1.5px solid rgba(254, 215, 170, 0.7)", padding: "1.25rem", boxShadow: "0 4px 18px rgba(0,0,0,0.03)" }}>
+              <h3 style={{ fontFamily: "Outfit, sans-serif", fontSize: "1.05rem", fontWeight: 800, color: "#1e293b", margin: "0 0 0.5rem 0" }}>
+                Frequently Asked Visitor Queries
+              </h3>
+              <p style={{ fontSize: "0.75rem", color: "#64748b", margin: "0 0 1rem 0" }}>
+                Click any question below to immediately ask the CBS AI assistant:
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {CBS_FAQS.map((faq) => (
+                  <button
+                    key={faq.q}
+                    onClick={() => handleSendChat(faq.q)}
+                    style={{
+                      padding: "0.65rem 0.85rem",
+                      borderRadius: "12px",
+                      background: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                      textAlign: "left",
+                      fontSize: "0.78rem",
+                      fontWeight: 700,
+                      color: "#1e293b",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "0.5rem",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    <span>{faq.q}</span>
+                    <ArrowRight size={13} style={{ color: "#ea580c", flexShrink: 0 }} />
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Right: Interactive Chat Console */}
-            <div
-              style={{
-                background: "#ffffff",
-                borderRadius: "20px",
-                border: "1.5px solid rgba(254, 215, 170, 0.8)",
-                boxShadow: "0 10px 32px rgba(15, 23, 42, 0.05)",
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-                minHeight: 0,
-                overflow: "hidden",
-              }}
-            >
+            <div style={{ background: "#ffffff", borderRadius: "18px", border: "1.5px solid rgba(254, 215, 170, 0.7)", boxShadow: "0 4px 18px rgba(0,0,0,0.03)", display: "flex", flexDirection: "column", height: "520px", overflow: "hidden" }}>
               <div style={{ padding: "0.85rem 1.25rem", background: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)", borderBottom: "1px solid rgba(254, 215, 170, 0.8)", display: "flex", alignItems: "center", gap: "0.65rem" }}>
-                <img src="/ai_robot.png" alt="GREEN_AI" style={{ width: 34, height: 34, objectFit: "contain" }} />
+                <img src="/ai_robot.png" alt={aiName} style={{ width: 34, height: 34, objectFit: "contain" }} />
                 <div>
-                  <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1e293b" }}>GREEN_AI</div>
-                  <div style={{ fontSize: "0.68rem", color: "#16a34a", fontWeight: 700 }}>● Your Smart Campus AI Assistant • Online</div>
+                  <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1e293b" }}>{aiName} Campus Assistant</div>
+                  <div style={{ fontSize: "0.68rem", color: "#16a34a", fontWeight: 700 }}>● Online • Ready to answer</div>
                 </div>
               </div>
 
@@ -1785,26 +1803,33 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
                     key={i}
                     style={{
                       alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
-                      maxWidth: "85%",
-                      background: msg.sender === "user" ? "#ea580c" : "#f1f5f9",
+                      maxWidth: "88%",
+                      background: msg.sender === "user" ? "#ea580c" : "#f8fafc",
                       color: msg.sender === "user" ? "#ffffff" : "#1e293b",
-                      padding: "0.65rem 0.95rem",
+                      padding: "0.75rem 1rem",
                       borderRadius: msg.sender === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                      fontSize: "0.8rem",
-                      lineHeight: 1.45,
+                      fontSize: "0.82rem",
+                      border: msg.sender === "user" ? "none" : "1px solid #e2e8f0",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.03)",
                     }}
                   >
-                    {msg.text}
+                    <MarkdownResponse content={msg.text} isUser={msg.sender === "user"} />
                   </div>
                 ))}
+                {isChatTyping && (
+                  <div style={{ alignSelf: "flex-start", color: "#ea580c", fontSize: "0.75rem", fontWeight: 600, padding: "0.25rem 0.5rem", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <RefreshCw size={12} className="animate-spin" /> {aiName} is thinking and typing an answer...
+                  </div>
+                )}
               </div>
 
               {/* Chat Input */}
               <div style={{ padding: "0.75rem 1rem", borderTop: "1px solid #e2e8f0", background: "#ffffff", display: "flex", gap: "0.5rem" }}>
                 <input
                   type="text"
-                  placeholder="Ask GREEN_AI about fees, timings, admissions, or directions..."
+                  placeholder={`Ask ${aiName} about admissions, fees, timings, or directions...`}
                   value={chatInput}
+                  disabled={isChatTyping}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSendChat(chatInput)}
                   style={{
@@ -1819,17 +1844,18 @@ export default function VisitorDashboard({ onBackToKiosk }: VisitorDashboardProp
                 />
                 <button
                   onClick={() => handleSendChat(chatInput)}
+                  disabled={isChatTyping}
                   style={{
                     width: 38,
                     height: 38,
                     borderRadius: "50%",
-                    background: "#ea580c",
+                    background: isChatTyping ? "#94a3b8" : "#ea580c",
                     color: "#ffffff",
                     border: "none",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    cursor: "pointer",
+                    cursor: isChatTyping ? "not-allowed" : "pointer",
                     boxShadow: "0 2px 8px rgba(234, 88, 12, 0.3)",
                   }}
                 >

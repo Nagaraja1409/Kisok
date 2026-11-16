@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import RoleSelectionScreen from "@/components/RoleSelectionScreen";
 import { RoleType } from "@/components/LoginScreen";
+import { getInstituteName } from "@/lib/session";
 
 export default function RolesPage() {
   const router = useRouter();
@@ -11,7 +12,7 @@ export default function RolesPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
-    document.title = "Role Selection Portal | Green Valley Public School";
+    document.title = `Role Selection Portal | ${getInstituteName()}`;
     setCurrentTime(new Date());
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
 

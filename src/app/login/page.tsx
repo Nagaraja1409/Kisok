@@ -70,7 +70,7 @@ export default function LoginPage() {
             fontWeight: 700,
           }}
         >
-          Loading Green Valley Portal Login...
+          Loading Login...
         </div>
       }
     >

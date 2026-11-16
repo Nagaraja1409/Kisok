@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { getUserSession, clearUserSession } from "@/lib/session";
+import MarkdownResponse from "@/components/chat/MarkdownResponse";
+import { getUserSession, clearUserSession, getInstituteLogo, getInstituteName, getAiAssistantName } from "@/lib/session";
 import { SessionInfo } from "@/types/auth";
-import { sendGreenAiQuery } from "@/lib/greenAiClient";
-import RoleAIFeatureExplorer from "@/components/shared/RoleAIFeatureExplorer";
 import {
   Calendar,
   CalendarDays,
@@ -73,7 +72,7 @@ const AI_PRESET_QA: Record<string, string> = {
   "How can I mentor current students?":
     "We welcome your mentorship! You can register for our Mentorship Clinic or submit a Guest Lecture proposal through the Request Desk. The school academic cell coordinates both virtual and in-person sessions for senior students.",
   "What is the alumni scholarship fund?":
-    "The Green Valley Merit & Need-based Scholarship Endowment provides tuition waivers and exam fee support for deserving high schoolers. Check the 'Give Back' tab to view active campaigns, goals, and donation tiers with 80G tax exemptions.",
+    "The Madhuvan Vatika Merit & Need-based Scholarship Endowment provides tuition waivers and exam fee support for deserving high schoolers. Check the 'Give Back' tab to view active campaigns, goals, and donation tiers with 80G tax exemptions.",
   "Tell me about my batch (Class of 2015)":
     "The Class of 2015 (Batch XI) has 112 verified alumni registered in the portal across 9 countries. Notable members include Priya Nair (FinTech leader), Dr. Kavita Menon (AIIMS surgeon), and Vikram Seth (EdTech founder)!",
 };
@@ -93,7 +92,7 @@ const INITIAL_ALUMNI_PROFILE = {
   email: "rohan.sharma.15@alumni.greenvalley.edu.in",
   phone: "+91 98450 12345",
   linkedin: "linkedin.com/in/rohan-sharma-gv15",
-  bio: "Class of 2015 valedictorian and robotics club lead. Passionate about AI in education and mentoring Green Valley high schoolers in competitive programming and higher education admissions.",
+  bio: "Class of 2015 valedictorian and robotics club lead. Passionate about AI in education and mentoring Madhuvan Vatika high schoolers in competitive programming and higher education admissions.",
   achievements: "CBSE National Science Exhibition Winner 2014 • Best Outgoing Student 2015",
   mentorshipInterest: true,
   jobReferralInterest: true,
@@ -178,7 +177,7 @@ const INITIAL_UPDATES = [
     date: "15 Sep 2025",
     desc: "VP at Global FinTech, named in 40-Under-40 Leadership Leaders for digital payment innovations across Asia.",
     fullContent:
-      "Green Valley Public School congratulates Priya Nair (Class of 2015, Batch XI) for being recognized in the prestigious Global 40-Under-40 FinTech Leaders list. Priya was our school cabinet head and topped the CBSE Commerce stream in 2015. She currently manages digital payment infrastructures processing over $10B annually.",
+      "Madhuvan Vatika - MVPS congratulates Priya Nair (Class of 2015, Batch XI) for being recognized in the prestigious Global 40-Under-40 FinTech Leaders list. Priya was our school cabinet head and topped the CBSE Commerce stream in 2015. She currently manages digital payment infrastructures processing over $10B annually.",
   },
   {
     id: 2,
@@ -187,7 +186,7 @@ const INITIAL_UPDATES = [
     tagColor: "#15803d",
     tagBg: "#dcfce7",
     date: "12 Sep 2025",
-    desc: "Google, Microsoft, TCS, and FinTech ventures offer priority referral slots and paid internships for Green Valley alumni.",
+    desc: "Google, Microsoft, TCS, and FinTech ventures offer priority referral slots and paid internships for Madhuvan Vatika alumni.",
     fullContent:
       "Alumni-founded and alumni-led technology enterprises in Bengaluru, Hyderabad, and Pune have posted 14 verified openings across full-stack engineering, cloud architecture, product design, and quantitative research. Submit applications directly via our Job Opportunities portal.",
   },
@@ -200,7 +199,7 @@ const INITIAL_UPDATES = [
     date: "08 Sep 2025",
     desc: "Grand homecoming celebration scheduled at Campus Auditorium with commemorative souvenir release and faculty felicitation.",
     fullContent:
-      "The Green Valley Alumni Association cordially invites all batches to the Decennial Homecoming Gala. Highlights include the launch of our digital archives portal, unveiling of the new STEM Robotics block, and felicitation of 15 veteran educators who have served for over 20 years.",
+      "The Madhuvan Vatika Alumni Association cordially invites all batches to the Decennial Homecoming Gala. Highlights include the launch of our digital archives portal, unveiling of the new STEM Robotics block, and felicitation of 15 veteran educators who have served for over 20 years.",
   },
   {
     id: 4,
@@ -211,7 +210,7 @@ const INITIAL_UPDATES = [
     date: "02 Sep 2025",
     desc: "Alumni endowment fund crosses ₹1.2 Crore milestone to establish modern maker-spaces and AI workstations for school students.",
     fullContent:
-      "In an inspiring show of gratitude, the Class of 2010 has collectively contributed ₹15 Lakh towards the modern Green Valley Robotics & Prototyping Laboratory. The lab will feature 3D printers, IoT micro-controllers, and drone simulation rigs.",
+      "In an inspiring show of gratitude, the Class of 2010 has collectively contributed ₹15 Lakh towards the modern Madhuvan Vatika Robotics & Prototyping Laboratory. The lab will feature 3D printers, IoT micro-controllers, and drone simulation rigs.",
   },
 ];
 
@@ -242,7 +241,7 @@ const INITIAL_CURRENT_AFFAIRS = [
     category: "Academics",
     icon: Award,
     summary:
-      "Indian national delegation bags 3 Golds and 2 Silvers at the Tokyo Olympiad, with Green Valley high schoolers cheering the national milestone.",
+      "Indian national delegation bags 3 Golds and 2 Silvers at the Tokyo Olympiad, with Madhuvan Vatika high schoolers cheering the national milestone.",
   },
 ];
 
@@ -424,7 +423,7 @@ const INITIAL_JOBS = [
     type: "Full-Time",
     experience: "4-7 Years",
     skills: ["React", "Node.js", "TypeScript", "AWS"],
-    desc: "Lead core payment gateways and checkout experiences. Priority interviews and referral bonus for Green Valley alumni.",
+    desc: "Lead core payment gateways and checkout experiences. Priority interviews and referral bonus for Madhuvan Vatika alumni.",
   },
   {
     id: 2,
@@ -441,7 +440,7 @@ const INITIAL_JOBS = [
   {
     id: 3,
     title: "AI Research Fellow / Graduate Intern",
-    company: "Green Valley Innovation Hub",
+    company: "Madhuvan Vatika Innovation Hub",
     postedBy: "Alumni Academic Council",
     location: "Campus / Hybrid",
     salary: "₹8,00,000 - ₹12,00,000 PA",
@@ -556,7 +555,7 @@ const GALLERY_ITEMS = [
   },
   {
     id: 2,
-    title: "Green Valley Academic Quad & Clock Tower",
+    title: "Madhuvan Vatika Academic Quad & Clock Tower",
     album: "Campus Life",
     year: "2025",
     image: "/hero_school_building.jpg",
@@ -584,7 +583,7 @@ const GALLERY_ITEMS = [
     album: "Achievements",
     year: "2024",
     image: "/achievement_math.jpg",
-    caption: "Green Valley students celebrating 1st place in the Regional Math Olympiad.",
+    caption: "Madhuvan Vatika students celebrating 1st place in the Regional Math Olympiad.",
   },
   {
     id: 6,
@@ -669,7 +668,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
     {
       id: "msg-welcome",
       sender: "bot",
-      text: "Hello! I'm GREEN_AI, your smart campus assistant. I can help you explore the features available for your role. What would you like to do?",
+      text: `👋 Welcome back! I am **${getAiAssistantName()}**, your ${getInstituteName()} Alumni Assistant. Ask me anything about alumni meets, reunions, ordering transcripts, scheduling campus visits, or career mentorship opportunities.`,
       time: "Just now",
     },
   ]);
@@ -735,8 +734,9 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // AI Chat Handler
+  // AI Chat Handler connected to /api/chat
   const handleSendAiMessage = async (queryText?: string) => {
+    if (isAiTyping) return;
     const textToSend = queryText || chatInput;
     if (!textToSend.trim()) return;
 
@@ -752,51 +752,23 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
     setIsAiTyping(true);
 
     try {
-      const uiContext = {
-        alumniProfile: {
-          name: session?.name || "Alumnus",
-          batch: "Class of 2015",
-          degree: "Computer Science & Engineering",
-        },
-        events,
-        masterclasses,
-      };
-
-      const result = await sendGreenAiQuery({
-        message: textToSend,
-        role: "alumni_ex_employee",
-        userId: session?.name ? session.name.replace(/\s+/g, "_") : "Alumni",
-        sessionId: `kiosk_alumni_${Date.now()}`,
-        uiContext,
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: textToSend,
+          role: "alumni",
+          history: chatMessages.slice(-6).map((m) => ({
+            role: m.sender === "user" ? "user" : "assistant",
+            content: m.text,
+          })),
+        }),
       });
 
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          id: `bot-${Date.now()}`,
-          sender: "bot" as const,
-          text: result.answer,
-          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
-        },
-      ]);
-    } catch {
-      let replyText =
+      const data = await res.json();
+      const replyText =
+        data.answer ||
         "Thank you for reaching out! You can explore the dedicated sections of the Alumni Portal for reunions, transcripts, campus visits, or mentorship opportunities.";
-
-      const lower = textToSend.toLowerCase();
-      if (lower.includes("meet") || lower.includes("reunion") || lower.includes("when is")) {
-        replyText = AI_PRESET_QA["When is the next Alumni Meet?"];
-      } else if (lower.includes("transcript") || lower.includes("degree") || lower.includes("certificate")) {
-        replyText = AI_PRESET_QA["How do I request my transcripts?"];
-      } else if (lower.includes("visit") || lower.includes("tour") || lower.includes("campus pass")) {
-        replyText = AI_PRESET_QA["How can I schedule a campus visit?"];
-      } else if (lower.includes("mentor") || lower.includes("lecture") || lower.includes("teach")) {
-        replyText = AI_PRESET_QA["How can I mentor current students?"];
-      } else if (lower.includes("donation") || lower.includes("give back") || lower.includes("scholarship")) {
-        replyText = AI_PRESET_QA["What is the alumni scholarship fund?"];
-      } else if (lower.includes("2015") || lower.includes("batch") || lower.includes("classmates")) {
-        replyText = AI_PRESET_QA["Tell me about my batch (Class of 2015)"];
-      }
 
       setChatMessages((prev) => [
         ...prev,
@@ -804,6 +776,16 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
           id: `bot-${Date.now()}`,
           sender: "bot" as const,
           text: replyText,
+          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
+        },
+      ]);
+    } catch {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `bot-${Date.now()}`,
+          sender: "bot" as const,
+          text: "⚠️ Alumni AI Service is temporarily unreachable. Please check back shortly or email the Alumni Secretariat.",
           time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
         },
       ]);
@@ -878,7 +860,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
     setRequests([newReq, ...requests]);
     setIsRequestModalOpen(false);
     setNewRequestNotes("");
-    showToast(`Request ${reqCode} submitted successfully to Green Valley Alumni Office!`);
+    showToast(`Request ${reqCode} submitted successfully to Madhuvan Vatika Alumni Office!`);
   };
 
   // Visit Pass Generation
@@ -949,6 +931,10 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
     setMessageText("");
   };
 
+  const schoolName = session?.initname || getInstituteName();
+  const schoolLogo = session?.initlogo || getInstituteLogo();
+  const aiName = getAiAssistantName();
+
   return (
     <div className="dashboard-page">
       {/* FLOATING AMBIENT ORBS (MATCHING EXACT STUDENT & STAFF THEME) */}
@@ -956,22 +942,23 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
       <div className="kiosk-orb kiosk-orb-two" />
 
       {/* TOP COMMAND NAVBAR (EXACT REPLICA OF STUDENT & STAFF DASHBOARDS) */}
-      <header className="dash-navbar">
-        <div className="command-brand" onClick={handleLogout} style={{ cursor: "pointer" }}>
-          <div className="command-mark" aria-hidden="true">
-            <svg width="34" height="34" viewBox="0 0 48 48" fill="none">
-              <path d="M24 7c4 4 10 6 14 3 0 8-7 13-14 14C17 23 10 18 10 10c4 3 10 1 14-3Z" fill="#ea580c" />
-              <path d="M24 24V11" stroke="#c2410c" strokeWidth="2.5" strokeLinecap="round" />
-              <path
-                d="M5 36c7-4.5 13-3.5 19 1 6-4.5 12-5.5 19-1V18c-7-4.5-13-3.5-19 1-6-4.5-12-5.5-19-1v18Z"
-                fill="#9a3412"
-              />
-              <path d="M24 19v18" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
+      <header className="dash-navbar" suppressHydrationWarning>
+        <div className="command-brand" onClick={handleLogout} style={{ cursor: "pointer" }} suppressHydrationWarning>
+          <div className="command-mark" aria-hidden="true" suppressHydrationWarning>
+            <img
+              src={schoolLogo}
+              alt={`${schoolName} Logo`}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/mvps/brand/logo.png";
+              }}
+              suppressHydrationWarning
+            />
           </div>
-          <div>
-            <p className="command-kicker">GREEN VALLEY • SMART CAMPUS</p>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }}>
+          <div suppressHydrationWarning>
+            <p className="command-kicker" suppressHydrationWarning>{schoolName.toUpperCase()} • SMART CAMPUS</p>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "nowrap" }} suppressHydrationWarning>
               <h1
                 style={{
                   margin: 0,
@@ -981,8 +968,9 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                   color: "#1e293b",
                   whiteSpace: "nowrap",
                 }}
+                suppressHydrationWarning
               >
-                Green Valley Public School
+                {schoolName}
               </h1>
               <span
                 style={{
@@ -1103,7 +1091,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
             { id: "visit" as AlumniScreen, name: "Plan a Visit", icon: MapPin },
             { id: "jobs" as AlumniScreen, name: "Job Board", icon: Briefcase },
             { id: "giveback" as AlumniScreen, name: "Give Back", icon: Heart },
-            { id: "aispace" as AlumniScreen, name: "GREEN_AI", icon: Sparkles },
+            { id: "aispace" as AlumniScreen, name: aiName, icon: Sparkles },
             { id: "gallery" as AlumniScreen, name: "Photo Gallery", icon: ImageIcon },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -1179,7 +1167,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
         <Sparkles size={12} style={{ color: "#ea580c" }} />
         <span>
           <strong>Static Demonstration Mode:</strong> All alumni records, forms, mock requests, simulated donations,
-          and registrations operate locally in frontend state for Green Valley Public School.
+          and registrations operate locally in frontend state for Madhuvan Vatika - MVPS.
         </span>
       </div>
 
@@ -1260,7 +1248,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
               <h2>
                 Welcome Back, <span>{profile.name}</span>
               </h2>
-              <p>Green Valley Global Alumni Legacy Network • 18 International Chapters • Mentorship & Giving</p>
+              <p>Madhuvan Vatika Global Alumni Legacy Network • 18 International Chapters • Mentorship & Giving</p>
               <div className="student-hero-chips">
                 <span className="student-hero-chip">
                   <GraduationCap size={12} /> {profile.batchTitle}
@@ -1304,17 +1292,17 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                 type="button"
                 onClick={() => setCurrentScreen("aispace")}
                 className="hero-ai-capsule-btn"
-                title="Launch Alumni GREEN_AI Space"
+                title={`Launch ${aiName} Space`}
               >
                 <div className="hero-ai-robo-wrap">
-                  <img src="/ai_robot.png" alt="GREEN_AI" className="hero-ai-robo-img" />
+                  <img src="/ai_robot.png" alt={aiName} className="hero-ai-robo-img" />
                   <span className="hero-ai-pulse-dot" />
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="hero-ai-kicker">
                     <Sparkles size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }} /> AI SPACE
                   </div>
-                  <span className="hero-ai-action">Ask GREEN_AI →</span>
+                  <span className="hero-ai-action">Ask {aiName} →</span>
                 </div>
               </button>
             </div>
@@ -1901,7 +1889,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                   </div>
                 </div>
                 <div>
-                  <div className="alumni-tile-title">GREEN_AI</div>
+                  <div className="alumni-tile-title">{aiName}</div>
                   <div className="alumni-tile-sub">Instant guidance</div>
                 </div>
               </div>
@@ -2077,9 +2065,9 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
               </div>
             </div>
 
-            {/* RIGHT SIDEBAR COLUMN: GREEN_AI + CURRENT AFFAIRS + MENTORSHIP */}
+            {/* RIGHT SIDEBAR COLUMN: GREENBOT AI + CURRENT AFFAIRS + MENTORSHIP */}
             <div className="alumni-right-col">
-              {/* GREEN_AI ASSISTANT CARD */}
+              {/* GREENBOT AI ASSISTANT CARD */}
               <div
                 style={{
                   background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)",
@@ -2119,7 +2107,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                         gap: "5px",
                       }}
                     >
-                      GREEN_AI <Sparkles size={13} style={{ color: "#facc15" }} />
+                      {aiName} Assistant <Sparkles size={13} style={{ color: "#facc15" }} />
                     </h4>
                     <p style={{ margin: "2px 0 0", fontSize: "0.68rem", color: "#cbd5e1" }}>
                       Instant guidance on events, transcripts, visits & mentors.
@@ -2168,7 +2156,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                       marginBottom: "0.65rem",
                     }}
                   >
-                    <strong>GREEN_AI:</strong> {chatMessages[chatMessages.length - 1].text}
+                    <strong>{aiName}:</strong> {chatMessages[chatMessages.length - 1].text}
                   </div>
                 )}
 
@@ -2187,8 +2175,9 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                   <Mic size={14} style={{ color: "#94a3b8" }} />
                   <input
                     type="text"
-                    placeholder="Ask GREEN_AI anything..."
+                    placeholder={`Ask ${aiName} anything...`}
                     value={chatInput}
+                    disabled={isAiTyping}
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSendAiMessage()}
                     style={{
@@ -2202,14 +2191,15 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                   />
                   <button
                     onClick={() => handleSendAiMessage()}
+                    disabled={isAiTyping}
                     style={{
-                      background: "#ea580c",
+                      background: isAiTyping ? "#94a3b8" : "#ea580c",
                       border: "none",
                       color: "#ffffff",
                       width: 26,
                       height: 26,
                       borderRadius: 6,
-                      cursor: "pointer",
+                      cursor: isAiTyping ? "not-allowed" : "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -2333,7 +2323,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
               </div>
               <div>
                 <h2>Alumni Directory & Classmate Reconnect</h2>
-                <p>Search over 12,400+ verified Green Valley alumni and reach out to former teachers.</p>
+                <p>Search over 12,400+ verified Madhuvan Vatika alumni and reach out to former teachers.</p>
               </div>
             </div>
             <div className="student-screen-nav-tools">
@@ -2728,7 +2718,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
               </div>
               <div>
                 <h2>Alumni Events & Homecoming Calendar</h2>
-                <p>Register for official reunions, masterclasses, and networking sessions at Green Valley.</p>
+                <p>Register for official reunions, masterclasses, and networking sessions at Madhuvan Vatika.</p>
               </div>
             </div>
             <div className="student-screen-nav-tools">
@@ -3288,7 +3278,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                 <Building2 size={20} />
               </div>
               <div>
-                <h2>Green Valley Public School Heritage & Archives</h2>
+                <h2>Madhuvan Vatika - MVPS Heritage & Archives</h2>
                 <p>38 years of academic excellence, national honors, traditions, and institutional legacy.</p>
               </div>
             </div>
@@ -3330,7 +3320,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                 {[
                   {
                     year: "1988",
-                    title: "Foundation of Green Valley Public School",
+                    title: "Foundation of Madhuvan Vatika - MVPS",
                     desc: "Established with 120 students and 8 teachers with a vision to nurture holistic, value-based education.",
                   },
                   {
@@ -3412,7 +3402,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                   </h4>
                 </div>
                 <p style={{ margin: 0, fontSize: "0.82rem", color: "#7c2d12", lineHeight: 1.5 }}>
-                  The emblem of Green Valley depicts the flame of knowledge rising between twin laurel branches of
+                  The emblem of Madhuvan Vatika depicts the flame of knowledge rising between twin laurel branches of
                   integrity and service. As alumni, each graduate carries this noble flame into industry, science, public
                   governance, and arts around the world.
                 </p>
@@ -3626,7 +3616,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                     borderBottom: "1px solid #f1f5f9",
                   }}
                 >
-                  Schedule Your Visit to Green Valley Public School
+                  Schedule Your Visit to Madhuvan Vatika - MVPS
                 </h3>
 
                 <div
@@ -3776,7 +3766,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
               </div>
               <div>
                 <h2>Alumni Career & Job Referral Board</h2>
-                <p>Verified openings and direct referrals posted by Green Valley alumni across leading global organizations.</p>
+                <p>Verified openings and direct referrals posted by Madhuvan Vatika alumni across leading global organizations.</p>
               </div>
             </div>
             <div className="student-screen-nav-tools">
@@ -3949,7 +3939,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
               </div>
               <div>
                 <h2>Give Back & Alma Mater Philanthropy</h2>
-                <p>Support Green Valley scholarship funds, robotics lab endowments, and sports infrastructure.</p>
+                <p>Support Madhuvan Vatika scholarship funds, robotics lab endowments, and sports infrastructure.</p>
               </div>
             </div>
             <div className="student-screen-nav-tools">
@@ -4178,7 +4168,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
       )}
 
       {/* ========================================================
-          VIEW 9: AI ASSISTANT SPACE (GREEN_AI)
+          VIEW 9: AI ASSISTANT SPACE (GREENBOT)
           ======================================================== */}
       {currentScreen === "aispace" && (
         <section className="student-fullscreen-page">
@@ -4191,8 +4181,8 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                 <Bot size={20} />
               </div>
               <div>
-                <h2>GREEN_AI • Alumni &amp; Legacy Space</h2>
-                <p>Your Smart Campus AI Assistant</p>
+                <h2>{aiName} Assistant (Alumni &amp; Legacy Space)</h2>
+                <p>Instant guidance on reunions, transcript verification, campus passes, and mentorship opportunities.</p>
               </div>
             </div>
             <div className="student-screen-nav-tools">
@@ -4217,102 +4207,37 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
           <div
             className="student-screen-scroll-body"
             style={{
-              padding: "0.75rem 1.25rem",
-              display: "grid",
-              gridTemplateColumns: "minmax(350px, 430px) 1fr",
-              gap: "1.2rem",
-              alignItems: "stretch",
+              padding: "1rem clamp(1rem, 2vw, 2.5rem)",
+              display: "flex",
+              flexDirection: "column",
               height: "100%",
-              minHeight: 0,
-              overflow: "hidden",
             }}
           >
-            {/* LEFT ZONE: Role AI Feature Explorer */}
-            <RoleAIFeatureExplorer
-              role="alumni_ex_employee"
-              onSelectPrompt={(prompt) => handleSendAiMessage(prompt)}
-            />
-
-            {/* RIGHT ZONE: Interactive Chat Workspace */}
             <div
               style={{
+                maxWidth: 900,
+                width: "100%",
+                margin: "0 auto",
                 display: "flex",
                 flexDirection: "column",
-                overflow: "hidden",
-                height: "100%",
+                flex: 1,
                 minHeight: 0,
-                borderRadius: "20px",
-                border: "1.5px solid rgba(221, 214, 254, 0.8)",
-                boxShadow: "0 10px 32px rgba(15, 23, 42, 0.05)",
-                background: "#ffffff",
               }}
             >
-              {/* Header */}
-              <div
-                style={{
-                  padding: "0.75rem 1.15rem",
-                  background: "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)",
-                  borderBottom: "1px solid rgba(221, 214, 254, 0.8)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexShrink: 0,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
-                  <img
-                    src="/ai_robot.png"
-                    alt="GREEN_AI"
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      objectFit: "contain",
-                      background: "#fff",
-                      border: "1.5px solid #7c3aed",
-                      padding: 2,
-                    }}
-                  />
-                  <div>
-                    <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1e293b" }}>
-                      GREEN_AI Alumni Concierge
-                    </div>
-                    <div style={{ fontSize: "0.68rem", color: "#7c3aed", fontWeight: 700 }}>
-                      ● Online • Grounded in Alumni Directory &amp; Archives
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  className="student-refresh-btn"
-                  onClick={() =>
-                    setChatMessages([
-                      {
-                        id: "welcome-alumni-reset",
-                        sender: "bot",
-                        text: "Welcome to GREEN_AI! Tap any mapped alumni feature on the left or ask about reunions, transcripts, or mentorship programs.",
-                        time: "Just now",
-                      },
-                    ])
-                  }
-                  title="Clear conversation"
-                  style={{ fontSize: "0.72rem", padding: "0.3rem 0.7rem" }}
-                >
-                  <RefreshCw size={13} /> Reset
-                </button>
-              </div>
-
-              {/* Chat Messages */}
+              {/* CHAT MESSAGES LOG */}
               <div
                 style={{
                   flex: 1,
-                  minHeight: 0,
+                  minHeight: 320,
                   overflowY: "auto",
-                  background: "#f8fafc",
+                  background: "#ffffff",
+                  borderRadius: "18px",
+                  border: "1.2px solid rgba(251, 146, 60, 0.28)",
                   padding: "1.25rem",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "0.85rem",
+                  gap: "1rem",
+                  boxShadow: "0 4px 14px rgba(0,0,0,0.03)",
                 }}
               >
                 {chatMessages.map((msg) => (
@@ -4320,86 +4245,127 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                     key={msg.id}
                     style={{
                       display: "flex",
-                      flexDirection: "column",
-                      alignItems: msg.sender === "user" ? "flex-end" : "flex-start",
-                      maxWidth: "80%",
-                      alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
+                      justifyContent: msg.sender === "user" ? "flex-end" : "flex-start",
+                      alignItems: "flex-start",
+                      gap: "8px",
                     }}
                   >
+                    {msg.sender === "bot" && (
+                      <div
+                        style={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: "50%",
+                          background: "#fff7ed",
+                          border: "1.5px solid #fed7aa",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#ea580c",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Bot size={18} />
+                      </div>
+                    )}
                     <div
                       style={{
-                        padding: "0.75rem 1rem",
-                        borderRadius: "16px",
-                        background: msg.sender === "user" ? "#7c3aed" : "#ffffff",
-                        color: msg.sender === "user" ? "#ffffff" : "#1e293b",
+                        maxWidth: "85%",
+                        padding: "10px 14px",
+                        borderRadius: "14px",
                         fontSize: "0.82rem",
-                        lineHeight: 1.5,
-                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-                        border: msg.sender === "user" ? "none" : "1px solid rgba(226, 232, 240, 0.9)",
-                        whiteSpace: "pre-wrap",
+                        lineHeight: 1.45,
+                        background: msg.sender === "user" ? "#ea580c" : "#fff7ed",
+                        color: msg.sender === "user" ? "#ffffff" : "#1e293b",
+                        border: msg.sender === "user" ? "none" : "1px solid rgba(251, 146, 60, 0.3)",
                       }}
                     >
-                      {msg.text}
+                      <MarkdownResponse content={msg.text} isUser={msg.sender === "user"} />
+                      <span
+                        style={{
+                          display: "block",
+                          marginTop: 4,
+                          fontSize: "0.64rem",
+                          color: msg.sender === "user" ? "rgba(255,255,255,0.8)" : "#94a3b8",
+                          textAlign: msg.sender === "user" ? "right" : "left",
+                        }}
+                      >
+                        {msg.time}
+                      </span>
                     </div>
-                    <span style={{ fontSize: "0.65rem", color: "#94a3b8", marginTop: "3px", padding: "0 4px" }}>
-                      {msg.time}
-                    </span>
                   </div>
                 ))}
                 {isAiTyping && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#7c3aed", fontSize: "0.75rem" }}>
-                    <RefreshCw size={13} className="animate-spin" />
-                    <span>GREEN_AI is typing an answer...</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#ea580c", fontSize: "0.78rem", fontWeight: 600 }}>
+                    <RefreshCw size={14} className="animate-spin" />
+                    <span>{aiName} is typing an answer...</span>
                   </div>
                 )}
                 <div ref={chatBottomRef} />
               </div>
 
-              {/* Input bar */}
+              {/* QUICK SUGGESTIONS */}
+              <div style={{ display: "flex", gap: "6px", overflowX: "auto", padding: "10px 0" }}>
+                {Object.keys(AI_PRESET_QA).map((q, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSendAiMessage(q)}
+                    style={{
+                      padding: "5px 12px",
+                      borderRadius: "9999px",
+                      background: "#ffffff",
+                      border: "1px solid rgba(251, 146, 60, 0.4)",
+                      color: "#9a3412",
+                      fontSize: "0.74rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+
+              {/* CHAT INPUT FORM */}
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
                   background: "#ffffff",
-                  padding: "0.65rem 1rem",
-                  borderTop: "1px solid rgba(226, 232, 240, 0.8)",
-                  flexShrink: 0,
+                  padding: "8px 12px",
+                  borderRadius: "14px",
+                  border: "1.5px solid rgba(251, 146, 60, 0.4)",
                 }}
               >
                 <input
                   type="text"
-                  placeholder="Ask GREEN_AI about batch reunions, transcripts, mentorship..."
+                  placeholder={`Type a question for ${aiName}...`}
                   value={chatInput}
+                  disabled={isAiTyping}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSendAiMessage()}
-                  style={{
-                    flex: 1,
-                    background: "#f8fafc",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: "9999px",
-                    padding: "0.5rem 1rem",
-                    fontSize: "0.82rem",
-                    outline: "none",
-                  }}
+                  style={{ border: "none", outline: "none", fontSize: "0.85rem", flex: 1, padding: "4px" }}
                 />
                 <button
                   onClick={() => handleSendAiMessage()}
+                  disabled={isAiTyping}
                   style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: "50%",
-                    background: "#7c3aed",
+                    padding: "8px 16px",
+                    borderRadius: 10,
+                    background: isAiTyping ? "#94a3b8" : "#ea580c",
                     color: "#ffffff",
                     border: "none",
-                    display: "flex",
+                    fontSize: "0.82rem",
+                    fontWeight: 800,
+                    cursor: isAiTyping ? "not-allowed" : "pointer",
+                    display: "inline-flex",
                     alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    boxShadow: "0 2px 8px rgba(124, 58, 237, 0.3)",
+                    gap: "6px",
                   }}
                 >
-                  <Send size={15} />
+                  <Send size={14} /> Send
                 </button>
               </div>
             </div>
@@ -4421,7 +4387,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                 <ImageIcon size={20} />
               </div>
               <div>
-                <h2>Green Valley Alumni Photo Gallery & Archives</h2>
+                <h2>Madhuvan Vatika Alumni Photo Gallery & Archives</h2>
                 <p>Relive golden school memories, reunion moments, athletic meets, and annual cultural celebrations.</p>
               </div>
             </div>
@@ -4709,7 +4675,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                 {selectedUpdateModal.title}
               </h3>
               <p style={{ margin: "0 0 1rem", fontSize: "0.74rem", color: "#94a3b8" }}>
-                Published: {selectedUpdateModal.date} • Green Valley Alumni Newsroom
+                Published: {selectedUpdateModal.date} • Madhuvan Vatika Alumni Newsroom
               </p>
               <p style={{ fontSize: "0.84rem", color: "#334155", lineHeight: 1.55 }}>
                 {selectedUpdateModal.fullContent}
@@ -4795,8 +4761,8 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
                 required
                 placeholder={
                   messageRecipient.isTeacher
-                    ? "Dear Teacher, remembering your inspiring classes at Green Valley..."
-                    : "Hi! Reconnecting from our Green Valley school days..."
+                    ? "Dear Teacher, remembering your inspiring classes at Madhuvan Vatika..."
+                    : "Hi! Reconnecting from our Madhuvan Vatika school days..."
                 }
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
@@ -5013,7 +4979,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
               }}
             >
               <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 900, fontFamily: "Outfit, sans-serif" }}>
-                GREEN VALLEY PUBLIC SCHOOL
+                {schoolName.toUpperCase()}
               </h3>
               <p style={{ margin: "2px 0 0", fontSize: "0.72rem", opacity: 0.9 }}>
                 Official Alumni Campus Security Entry Pass
@@ -5168,7 +5134,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
               }}
             >
               <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 900, fontFamily: "Outfit, sans-serif" }}>
-                GREEN VALLEY EDUCATIONAL TRUST
+                MADHUVAN VATIKA EDUCATIONAL TRUST
               </h3>
               <p style={{ margin: "2px 0 0", fontSize: "0.72rem", opacity: 0.9 }}>
                 Official Section 80G Tax Exemption Receipt (Sample)
@@ -5343,7 +5309,7 @@ export default function AlumniDashboard({ onBackToKiosk }: DashboardProps) {
         }}
       >
         <div>
-          <span className="footer-dot" style={{ background: "#ea580c" }} /> Official Green Valley Public School Alumni Command Portal
+          <span className="footer-dot" style={{ background: "#ea580c" }} /> Official {schoolName} Alumni Command Portal
         </div>
         <div className="footer-links">
           <span>CBSE Affiliation 1930281</span>
